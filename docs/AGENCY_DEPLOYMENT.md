@@ -57,6 +57,15 @@ in the project's Context page. Agents can set them with
 `update_project_context`. New names apply to answers collected from then on;
 earlier results are not recalculated.
 
+## How long AI answers are kept
+
+AI answers can quote real people, so Prompt Tracking clears the text of each
+answer 90 days after it was collected. The answer's brand results, sources and
+trends stay until the run itself is deleted after 13 months, and the answer
+view says the text was removed. Set `AI_ANSWER_RETENTION_DAYS` to keep text
+for a different number of days, and name the period in your record of
+processing activities.
+
 ## Analytics
 
 The project dashboard can show Google Analytics data after GA4 is connected.
