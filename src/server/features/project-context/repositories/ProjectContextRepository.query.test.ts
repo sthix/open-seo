@@ -48,6 +48,8 @@ beforeAll(async () => {
       ...readFileSync("drizzle/sqlite/0042_project_memory.sql", "utf8")
         .split("--> statement-breakpoint")
         .filter((statement) => !statement.includes("DROP TABLE")),
+      `ALTER TABLE projects ADD brand_aliases text;`,
+      `ALTER TABLE project_competitors ADD aliases text;`,
     ].join("\n"),
   );
 
@@ -126,12 +128,19 @@ describe("upsertKeyPages", () => {
 });
 
 describe("upsertCompetitors", () => {
-  it("keeps stored notes when the caller omits them", async () => {
+  it("keeps stored notes and aliases when the caller omits them", async () => {
     await runStatements(
       ProjectContextRepository.upsertCompetitors(
         tx,
         PROJECT_ID,
-        [{ domain: "acme.com", name: null, notes: "user note" }],
+        [
+          {
+            domain: "acme.com",
+            name: null,
+            aliases: "AcmeCo",
+            notes: "user note",
+          },
+        ],
         "user",
       ),
     );
@@ -140,7 +149,7 @@ describe("upsertCompetitors", () => {
       ProjectContextRepository.upsertCompetitors(
         tx,
         PROJECT_ID,
-        [{ domain: "acme.com", name: "Acme", notes: null }],
+        [{ domain: "acme.com", name: "Acme", aliases: null, notes: null }],
         "mcp",
       ),
     );
@@ -149,6 +158,7 @@ describe("upsertCompetitors", () => {
       expect.objectContaining({
         domain: "acme.com",
         name: "Acme",
+        aliases: "AcmeCo",
         notes: "user note",
       }),
     ]);

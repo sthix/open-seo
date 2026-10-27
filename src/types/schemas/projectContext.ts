@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { brandAliasesSchema } from "@/shared/brand-aliases";
 
 // Shared vocabulary for project memory. The MCP tools, the server functions and
 // the settings UI all validate against these, so the wire shape of a patch op is
@@ -56,6 +57,7 @@ export const CUSTOM_SECTION_KEY_PREFIX = "custom:";
 const competitorInputSchema = z.object({
   domain: z.string().trim().min(1).max(255),
   name: z.string().trim().max(120).optional(),
+  aliases: brandAliasesSchema.optional(),
   notes: z.string().trim().max(500).optional(),
 });
 
@@ -91,6 +93,8 @@ const projectContextUpdateSchema = z.union([
   z.strictObject({
     removeCompetitors: z.array(z.string().trim().min(1)).min(1).max(100),
   }),
+  // The project's own brand; competitors carry their aliases on addCompetitors.
+  z.strictObject({ brandAliases: brandAliasesSchema }),
   z.strictObject({
     addKeyPages: z.array(keyPageInputSchema).min(1).max(100),
   }),

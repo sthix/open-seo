@@ -70,12 +70,19 @@ function rootDomainName(value: string) {
     : null;
 }
 
-/** Answer text naming the brand. A brand named "acme.com" is written "Acme". */
-export function aiBrandNames(brand: Pick<AiBrand, "name" | "domain">) {
+type MatchableBrand = Pick<AiBrand, "name" | "domain"> &
+  Partial<Pick<AiBrand, "aliases">>;
+
+/**
+ * Answer text naming the brand: its name, domain and aliases. A brand named
+ * "acme.com" is written "Acme".
+ */
+export function aiBrandNames(brand: MatchableBrand) {
   const stem = rootDomainName(brand.name);
+  const names = [brand.name, brand.domain, ...(brand.aliases ?? [])];
   return stem && stem === rootDomainName(brand.domain)
-    ? [brand.name, brand.domain, stem]
-    : [brand.name, brand.domain];
+    ? [...names, stem]
+    : names;
 }
 
 /**
@@ -83,10 +90,7 @@ export function aiBrandNames(brand: Pick<AiBrand, "name" | "domain">) {
  * and cited when the answer cites a page on its domain. A generic brand name
  * can count as a mention of something else; that is accepted for simplicity.
  */
-export function matchAiBrand(
-  answer: ParsedAiAnswer,
-  brand: Pick<AiBrand, "name" | "domain">,
-) {
+export function matchAiBrand(answer: ParsedAiAnswer, brand: MatchableBrand) {
   const spans = aiMentionSpans(answer.answerText, aiBrandNames(brand));
   return {
     mentioned: spans.length > 0,
@@ -100,9 +104,10 @@ export function matchAiBrand(
 /** Prompt cohorts must include diagnostics that name the brand only by URL. */
 export function aiPromptIsBranded(
   prompt: string,
-  brand: Pick<AiBrand, "name" | "domain">,
+  brand: MatchableBrand,
 ): boolean {
-  if (aiMentionSpans(prompt, [brand.name]).length) return true;
+  if (aiMentionSpans(prompt, [brand.name, ...(brand.aliases ?? [])]).length)
+    return true;
   const domain = brand.domain
     .replace(/^www\./i, "")
     .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

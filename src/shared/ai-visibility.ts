@@ -56,6 +56,8 @@ export interface AiBrand {
   name: string;
   domain: string;
   own: boolean;
+  /** Other names that count as a mention, from project context. */
+  aliases: string[];
 }
 export interface AiTracker {
   id: string;

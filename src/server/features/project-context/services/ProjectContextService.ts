@@ -1,4 +1,5 @@
 import { runBatch } from "@/db/runBatch";
+import { parseBrandAliases } from "@/shared/brand-aliases";
 import { ProjectContextRepository } from "@/server/features/project-context/repositories/ProjectContextRepository";
 import { resolveContextUpdates } from "@/server/features/project-context/services/contextUpdateOps";
 import { ReportTemplateRepository } from "@/server/features/reports/repositories/ReportTemplateRepository";
@@ -33,10 +34,13 @@ type ProjectContext = {
     updatedAt: string;
     updatedBy: ContextAuthor;
   }[];
+  /** Other names the project's own brand goes by in AI answers. */
+  brandAliases: string[];
   competitors: {
     id: string;
     domain: string;
     name: string | null;
+    aliases: string[];
     notes: string | null;
     updatedAt: string;
     updatedBy: ContextAuthor;
@@ -67,14 +71,21 @@ type ProjectContext = {
 export async function getProjectContext(
   projectId: string,
 ): Promise<ProjectContext> {
-  const [sectionRows, competitors, keyPages, researchLog, reportTemplates] =
-    await Promise.all([
-      ProjectContextRepository.listSections(projectId),
-      ProjectContextRepository.listCompetitors(projectId),
-      ProjectContextRepository.listKeyPages(projectId),
-      ProjectContextRepository.listResearchLog(projectId, RESEARCH_LOG_LIMIT),
-      ReportTemplateRepository.listTemplates(projectId),
-    ]);
+  const [
+    sectionRows,
+    competitors,
+    keyPages,
+    researchLog,
+    reportTemplates,
+    brandAliases,
+  ] = await Promise.all([
+    ProjectContextRepository.listSections(projectId),
+    ProjectContextRepository.listCompetitors(projectId),
+    ProjectContextRepository.listKeyPages(projectId),
+    ProjectContextRepository.listResearchLog(projectId, RESEARCH_LOG_LIMIT),
+    ReportTemplateRepository.listTemplates(projectId),
+    ProjectContextRepository.getBrandAliases(projectId),
+  ]);
 
   const stored = new Map(sectionRows.map((row) => [row.key, row]));
   // Typed sections keep their declared order, which is also the order the
@@ -107,7 +118,16 @@ export async function getProjectContext(
         updatedAt: row.updatedAt,
         updatedBy: row.updatedBy,
       })),
-    competitors,
+    brandAliases: parseBrandAliases(brandAliases),
+    competitors: competitors.map((row) => ({
+      id: row.id,
+      domain: row.domain,
+      name: row.name,
+      aliases: parseBrandAliases(row.aliases),
+      notes: row.notes,
+      updatedAt: row.updatedAt,
+      updatedBy: row.updatedBy,
+    })),
     keyPages,
     researchLog: researchLog.map((row) => ({
       id: row.id,
@@ -179,6 +199,10 @@ export async function applyContextUpdates(
             op.rows,
             updatedBy,
           );
+        case "setBrandAliases":
+          return [
+            ProjectContextRepository.setBrandAliases(tx, projectId, op.aliases),
+          ];
         case "deleteCompetitors":
           return ProjectContextRepository.deleteCompetitors(
             tx,
@@ -261,6 +285,11 @@ export function renderProjectContextMarkdown(context: ProjectContext): string {
     pushSection(lines, custom.title ?? custom.slug, [custom.content]);
   }
 
+  if (context.brandAliases.length)
+    pushSection(lines, "Brand also appears as", [
+      context.brandAliases.join(", "),
+    ]);
+
   pushSection(
     lines,
     "Competitors",
@@ -268,6 +297,9 @@ export function renderProjectContextMarkdown(context: ProjectContext): string {
       [
         `- ${competitor.domain}`,
         competitor.name ? ` — ${competitor.name}` : "",
+        competitor.aliases.length
+          ? `, also ${competitor.aliases.join(", ")}`
+          : "",
         competitor.notes ? ` (${competitor.notes})` : "",
       ].join(""),
     ),

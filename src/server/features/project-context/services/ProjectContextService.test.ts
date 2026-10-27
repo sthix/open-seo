@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   listCompetitors: vi.fn(),
   upsertCompetitors: vi.fn(),
   deleteCompetitors: vi.fn(),
+  getBrandAliases: vi.fn(),
+  setBrandAliases: vi.fn(),
   listKeyPages: vi.fn(),
   upsertKeyPages: vi.fn(),
   deleteKeyPages: vi.fn(),
@@ -59,6 +61,7 @@ describe("project context service", () => {
   beforeEach(() => {
     mocks.listSections.mockResolvedValue([]);
     mocks.listCompetitors.mockResolvedValue([]);
+    mocks.getBrandAliases.mockResolvedValue(null);
     mocks.listKeyPages.mockResolvedValue([]);
     mocks.listResearchLog.mockResolvedValue([]);
     mocks.listTemplates.mockResolvedValue([]);
@@ -147,7 +150,11 @@ describe("project context service", () => {
         {
           addCompetitors: [
             { domain: "https://WWW.Acme.com/pricing" },
-            { domain: "acme.com", notes: "strong on comparison pages" },
+            {
+              domain: "acme.com",
+              notes: "strong on comparison pages",
+              aliases: ["AcmeCo", " acmeco "],
+            },
             { domain: "beta.io" },
           ],
         },
@@ -162,11 +169,23 @@ describe("project context service", () => {
         {
           domain: "acme.com",
           name: null,
+          aliases: "AcmeCo",
           notes: "strong on comparison pages",
         },
-        { domain: "beta.io", name: null, notes: null },
+        { domain: "beta.io", name: null, aliases: null, notes: null },
       ],
       "mcp",
+    );
+  });
+
+  // Omitted aliases keep the stored list, so an empty list must clear it.
+  it("clears the brand's aliases with an empty list", async () => {
+    await applyContextUpdates("project_1", [{ brandAliases: [] }], "user");
+
+    expect(mocks.setBrandAliases).toHaveBeenCalledWith(
+      expect.anything(),
+      "project_1",
+      "",
     );
   });
 
@@ -309,6 +328,7 @@ describe("project context service", () => {
         sections: [],
         missingSections: [],
         customSections: [],
+        brandAliases: [],
         competitors: [],
         keyPages: [],
         reportTemplates: [],

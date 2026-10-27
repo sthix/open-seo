@@ -51,6 +51,8 @@ export const projectCompetitors = pgTable(
     // same competitor from different surfaces upsert onto one row.
     domain: text("domain").notNull(),
     name: text("name"),
+    // Other names the competitor goes by in AI answers, one per line.
+    aliases: text("aliases"),
     notes: text("notes"),
     updatedAt: text("updated_at").notNull().default(isoNow),
     updatedBy: text("updated_by", { enum: ["user", "sam", "mcp"] }).notNull(),

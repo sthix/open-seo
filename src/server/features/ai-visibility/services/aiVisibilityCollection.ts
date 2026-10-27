@@ -415,10 +415,14 @@ async function saveAiAnswer(
       observationId,
       ...citation,
     })),
+    // Name and domain are copied so later edits never rewrite history;
+    // aliases only decide the match.
     matches: brands.map((brand) => ({
       id: crypto.randomUUID(),
       observationId,
-      ...brand,
+      name: brand.name,
+      domain: brand.domain,
+      own: brand.own,
       ...matchAiBrand(answer, brand),
     })),
   });

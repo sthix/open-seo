@@ -3,9 +3,19 @@ import { Input } from "@/client/components/ui/input";
 import { FormActions } from "@/client/components/FormActions";
 import type { ProjectContextUpdate } from "@/types/schemas/projectContext";
 import { EditableListSection } from "./EditableListSection";
-import { Provenance, useContextUpdate, type ContextCompetitor } from "./shared";
+import {
+  Provenance,
+  splitAliases,
+  useContextUpdate,
+  type ContextCompetitor,
+} from "./shared";
 
-type CompetitorDraft = { domain: string; name: string; notes: string };
+type CompetitorDraft = {
+  domain: string;
+  name: string;
+  aliases: string;
+  notes: string;
+};
 
 export function CompetitorsSection({
   projectId,
@@ -31,6 +41,7 @@ export function CompetitorsSection({
         {
           domain: draft.domain.trim(),
           name: draft.name.trim(),
+          aliases: splitAliases(draft.aliases),
           notes: draft.notes.trim(),
         },
       ],
@@ -57,6 +68,11 @@ export function CompetitorsSection({
             {item.name ? (
               <span className="truncate text-xs text-muted-foreground">
                 {item.name}
+              </span>
+            ) : null}
+            {item.aliases.length ? (
+              <span className="truncate text-xs text-muted-foreground">
+                also {item.aliases.join(", ")}
               </span>
             ) : null}
           </div>
@@ -92,6 +108,7 @@ function CompetitorForm({
   const [draft, setDraft] = React.useState<CompetitorDraft>({
     domain: initial?.domain ?? "",
     name: initial?.name ?? "",
+    aliases: initial?.aliases.join(", ") ?? "",
     notes: initial?.notes ?? "",
   });
 
@@ -123,6 +140,14 @@ function CompetitorForm({
           aria-label="Competitor name"
         />
       </div>
+      <Input
+        value={draft.aliases}
+        onChange={(event) =>
+          setDraft({ ...draft, aliases: event.target.value })
+        }
+        placeholder="Other names in AI answers, separated by commas (optional)"
+        aria-label="Other competitor names"
+      />
       <Input
         value={draft.notes}
         onChange={(event) => setDraft({ ...draft, notes: event.target.value })}

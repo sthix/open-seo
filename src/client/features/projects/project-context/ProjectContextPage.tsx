@@ -10,6 +10,7 @@ import {
   PROSE_MAX_CHARS,
   type ProjectContextSectionKey,
 } from "@/types/schemas/projectContext";
+import { BrandAliasesSection } from "./BrandAliasesSection";
 import { CompetitorsSection } from "./CompetitorsSection";
 import { KeyPagesSection } from "./KeyPagesSection";
 import {
@@ -73,6 +74,11 @@ export function ProjectContextPage({ projectId }: { projectId: string }) {
             projectId={projectId}
             sections={context.sections}
             missingSections={context.missingSections}
+          />
+
+          <BrandAliasesSection
+            projectId={projectId}
+            aliases={context.brandAliases}
           />
 
           <CompetitorsSection
