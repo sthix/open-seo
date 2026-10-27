@@ -60,6 +60,14 @@ export function Provenance({ by, at }: { by: ContextAuthor; at?: string }) {
   );
 }
 
+/** "HelpScout, Help-Scout" → ["HelpScout", "Help-Scout"]; the server dedupes. */
+export function splitAliases(value: string): string[] {
+  return value
+    .split(",")
+    .map((alias) => alias.trim())
+    .filter(Boolean);
+}
+
 export const listClass =
   "divide-y divide-border overflow-hidden rounded-lg border border-border bg-card";
 

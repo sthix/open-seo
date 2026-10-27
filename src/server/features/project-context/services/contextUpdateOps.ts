@@ -1,5 +1,6 @@
 import { normalizeBacklinksTarget } from "@/server/lib/dataforseoBacklinksTarget";
 import { AppError } from "@/server/lib/errors";
+import { formatBrandAliases } from "@/shared/brand-aliases";
 import {
   CUSTOM_SECTION_KEY_PREFIX,
   PROSE_MAX_CHARS,
@@ -71,8 +72,15 @@ type ResolvedOp =
   | { kind: "deleteSection"; key: string }
   | {
       kind: "upsertCompetitors";
-      rows: { domain: string; name: string | null; notes: string | null }[];
+      rows: {
+        domain: string;
+        name: string | null;
+        // Null keeps the stored aliases; "" clears them.
+        aliases: string | null;
+        notes: string | null;
+      }[];
     }
+  | { kind: "setBrandAliases"; aliases: string }
   | { kind: "deleteCompetitors"; domains: string[] }
   | {
       kind: "upsertKeyPages";
@@ -164,6 +172,9 @@ export function resolveContextUpdates(
             scope: "domain",
           }).apiTarget,
           name: competitor.name ?? null,
+          aliases: competitor.aliases
+            ? formatBrandAliases(competitor.aliases)
+            : null,
           notes: competitor.notes ?? null,
         })),
         (row) => row.domain,
@@ -177,6 +188,14 @@ export function resolveContextUpdates(
       }
       resolved.push({ kind: "upsertCompetitors", rows });
       for (const row of rows) domains.add(row.domain);
+      return;
+    }
+
+    if ("brandAliases" in update) {
+      resolved.push({
+        kind: "setBrandAliases",
+        aliases: formatBrandAliases(update.brandAliases),
+      });
       return;
     }
 

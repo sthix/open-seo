@@ -60,9 +60,11 @@ export async function saveWebsiteSetup(
         .select(
           sql`
           select * from (${sql.join(
+            // In the table's column order; researched competitors have no
+            // aliases yet.
             rows.map(
               ({ id, domain, name, notes }) =>
-                sql`select ${id}, ${input.projectId}, ${domain}, ${name}, ${notes}, ${updatedAt}, ${author}`,
+                sql`select ${id}, ${input.projectId}, ${domain}, ${name}, null, ${notes}, ${updatedAt}, ${author}`,
             ),
             sql` union all `,
           )}) as researched_competitors

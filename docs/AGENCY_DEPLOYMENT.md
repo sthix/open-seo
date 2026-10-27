@@ -48,6 +48,15 @@ optionally, `OPENROUTER_MODEL` as described in the Docker guide. API usage is
 billed by the provider. Check the provider's data handling terms before sending
 customer information to a model.
 
+## Brand names in Prompt Tracking
+
+Prompt Tracking counts a brand as mentioned when an AI answer names it, its
+domain, or one of its other names. Add other names, such as "HelpScout" for
+"Help Scout" or a former brand name, under Brand names and on each competitor
+in the project's Context page. Agents can set them with
+`update_project_context`. New names apply to answers collected from then on;
+earlier results are not recalculated.
+
 ## Analytics
 
 The project dashboard can show Google Analytics data after GA4 is connected.
