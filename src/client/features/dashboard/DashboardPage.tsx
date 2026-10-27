@@ -25,6 +25,8 @@ import {
   GscCard,
 } from "@/client/features/dashboard/DashboardCards";
 import { Ga4Card } from "@/client/features/dashboard/Ga4Card";
+import { AnalyticsCard } from "@/client/features/dashboard/AnalyticsCard";
+import { getAnalyticsConnections } from "@/serverFunctions/analytics";
 import { WorkspaceMergeBanner } from "@/client/features/dashboard/WorkspaceMergeBanner";
 import { QueryError } from "@/client/components/QueryState";
 import {
@@ -53,6 +55,10 @@ export function DashboardPage({
     queryFn: () => getDashboardOverview({ data: { projectId } }),
     refetchInterval: (query) =>
       query.state.data?.audit?.status === "running" ? 3000 : false,
+  });
+  const analyticsQuery = useQuery({
+    queryKey: ["analytics-connections", projectId],
+    queryFn: () => getAnalyticsConnections({ data: { projectId } }),
   });
 
   const activation = activationQuery.data;
@@ -128,6 +134,17 @@ export function DashboardPage({
           },
         ]
       : []),
+    ...(["posthog", "umami"] as const)
+      .filter((provider) =>
+        analyticsQuery.data?.some(
+          (connection) => connection.provider === provider,
+        ),
+      )
+      .map((provider) => ({
+        key: provider,
+        hasData: true,
+        node: <AnalyticsCard projectId={projectId} provider={provider} />,
+      })),
     ...(overview
       ? [
           {

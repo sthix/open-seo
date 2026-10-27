@@ -33,7 +33,7 @@ import {
 import { TransferOwnershipModal } from "@/client/features/team/TransferOwnershipModal";
 import { captureClientEvent } from "@/client/lib/posthog";
 import { authClient, useSession } from "@/lib/auth-client";
-import { hasOrgPermission } from "@/lib/org-permissions";
+import { hasOrgPermission, type InvitableRole } from "@/lib/org-permissions";
 import { getTeam, sendTeamInvitation } from "@/serverFunctions/organization";
 
 const RESEND_KEY = ["team", "resend-invitation"];
@@ -73,7 +73,15 @@ export function TeamSettings() {
   // the same link with a refreshed expiry.
   const resendMutation = useMutation({
     mutationKey: RESEND_KEY,
-    mutationFn: (email: string) => sendTeamInvitation({ data: { email } }),
+    mutationFn: (email: string) => {
+      // Resend with the role the invitation was created with.
+      const pending = teamQuery.data?.pendingInvitations.find(
+        (invitation) => invitation.email === email,
+      );
+      const role: InvitableRole =
+        pending?.role === "viewer" ? "viewer" : "admin";
+      return sendTeamInvitation({ data: { email, role } });
+    },
     onSuccess: (result) => {
       captureClientEvent("team:invitation_resend");
       announceInvitation(result, "Invitation resent");
@@ -162,8 +170,9 @@ export function TeamSettings() {
         }
       />
       <p className="text-sm text-muted-foreground">
-        Teammates join as Admins. Admins have full access to each project except
-        for billing.
+        Admins have full access to each project except for billing. Viewers can
+        see dashboards and reports but can&apos;t run research or change
+        anything.
       </p>
       {orgContextQuery.isSuccess && !canManageTeam ? (
         <PermissionHint action="invite or remove teammates" />

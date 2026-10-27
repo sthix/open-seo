@@ -3,6 +3,7 @@ import { getAuth, getHostedBaseUrl } from "@/lib/auth";
 import { API_KEY_PREFIX } from "@/lib/auth-api-key";
 import { MCP_OAUTH_SCOPES } from "@/lib/oauth-resource";
 import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
+import { canEditWorkspace } from "@/server/auth/viewer-access";
 import { recordMcpAuthorized } from "@/server/features/activation/mcpActivation";
 import { createWorkersOAuthMcpProps, MCP_ROUTE } from "@/server/mcp/context";
 
@@ -148,6 +149,12 @@ export async function handleMcpApiKeyRequest(
         code: "FORBIDDEN",
         message:
           "This API key's organization access was revoked. Create a new key in Settings.",
+      });
+    }
+    if (!canEditWorkspace(membership.role)) {
+      return apiKeyErrorResponse({
+        code: "FORBIDDEN",
+        message: "Read-only access does not include MCP.",
       });
     }
 

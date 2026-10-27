@@ -15,11 +15,18 @@ import {
 import { getErrorCode } from "@/client/lib/error-messages";
 import { captureClientEvent } from "@/client/lib/posthog";
 import { isHostedClientAuthMode, usesBetterAuthClient } from "@/lib/auth-mode";
+import { INVITABLE_ROLES, type InvitableRole } from "@/lib/org-permissions";
 import { sendTeamInvitation } from "@/serverFunctions/organization";
 
 const inviteSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
+  role: z.enum(INVITABLE_ROLES),
 });
+
+const ROLE_OPTIONS = [
+  { value: "admin", label: "Admin: full access except billing" },
+  { value: "viewer", label: "Viewer: read-only dashboards and reports" },
+] as const satisfies readonly { value: InvitableRole; label: string }[];
 
 export function inviteErrorMessage(error: Error) {
   const code = getErrorCode(error);
@@ -65,8 +72,8 @@ export function InviteTeammateModal({
   // Server function (not authClient.inviteMember): it enforces the daily send
   // limits and fails visibly when the invite email doesn't send.
   const inviteMutation = useMutation({
-    mutationFn: (inviteeEmail: string) =>
-      sendTeamInvitation({ data: { email: inviteeEmail } }),
+    mutationFn: (invitation: { email: string; role: InvitableRole }) =>
+      sendTeamInvitation({ data: invitation }),
     onSuccess: (result) => {
       captureClientEvent("team:invitation_send");
       announceInvitation(result, "Invitation sent");
@@ -89,10 +96,14 @@ export function InviteTeammateModal({
   const sharesLink = usesBetterAuthClient() && !isHostedClientAuthMode();
 
   const form = useAppForm({
-    defaultValues: { email: "" },
+    defaultValues: { email: "", role: "admin" as InvitableRole },
     validationLogic: revalidateLogic(),
     validators: { onDynamic: inviteSchema },
-    onSubmit: ({ value }) => inviteMutation.mutateAsync(value.email.trim()),
+    onSubmit: ({ value }) =>
+      inviteMutation.mutateAsync({
+        email: value.email.trim(),
+        role: value.role,
+      }),
   });
 
   return (
@@ -109,8 +120,10 @@ export function InviteTeammateModal({
               <DialogTitle>Invite a teammate</DialogTitle>
               <DialogDescription>
                 {sharesLink
-                  ? "They'll join as an Admin with full access to each project. Share the invitation link with them; they create their account from it. It expires in 7 days."
-                  : "They'll join as an Admin with full access to each project except for billing. The invitation link expires in 7 days."}
+                  ? "Share the invitation link with them; they create their account from it. It expires in 7 days."
+                  : "The invitation link expires in 7 days."}{" "}
+                Viewers can see every project's dashboards and reports but can't
+                run research, change settings or connect an AI agent.
               </DialogDescription>
             </DialogHeader>
             <form.AppField name="email">
@@ -122,6 +135,11 @@ export function InviteTeammateModal({
                   required
                   autoFocus
                 />
+              )}
+            </form.AppField>
+            <form.AppField name="role">
+              {(field) => (
+                <field.SelectField label="Role" items={ROLE_OPTIONS} />
               )}
             </form.AppField>
             <DialogFooter>

@@ -3,6 +3,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { resolveUserContextFromHeaders } from "@/middleware/ensure-user/resolve";
 import type { EnsuredProject } from "@/middleware/ensure-user/types";
 import { AppError } from "@/server/lib/errors";
+import { requireServerFunctionAccess } from "@/server/auth/viewer-access";
 import { ProjectRepository } from "@/server/features/projects/repositories/ProjectRepository";
 
 function extractProjectId(data: unknown) {
@@ -18,8 +19,10 @@ function extractProjectId(data: unknown) {
 
 export const ensureUserMiddleware = createMiddleware({
   type: "function",
-}).server(async ({ next, data }) => {
+}).server(async ({ next, data, serverFnMeta }) => {
   const context = await resolveUserContextFromHeaders(getRequest().headers);
+  // Read-only viewers may only call allowlisted server functions.
+  requireServerFunctionAccess(context.role, serverFnMeta);
 
   const projectId = extractProjectId(data);
 

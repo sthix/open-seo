@@ -22,6 +22,7 @@ import { getPublicOrigin } from "@/server/mcp/public-origin";
 import { createOpenSeoMcpServer } from "@/server/mcp/server";
 import { supportsMcpApps } from "@/server/mcp/ui-capabilities";
 import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
+import { canEditWorkspace } from "@/server/auth/viewer-access";
 
 // Mirrors the agents SDK's DEFAULT_CORS_OPTIONS so legacy responses carry the
 // same CORS surface as the modern handler's.
@@ -203,6 +204,12 @@ export async function handleAuthenticatedOpenSeoMcpRequest(
       status: 401,
       headers: { "WWW-Authenticate": 'Bearer error="invalid_token"' },
     });
+  }
+  // Read-only viewers use the dashboards; MCP tools can run paid research.
+  if (!canEditWorkspace(membership.role)) {
+    return withMcpCors(
+      new Response("Read-only access does not include MCP", { status: 403 }),
+    );
   }
 
   // The handler would fall back to the provider-populated ctx.props on its

@@ -11,10 +11,14 @@ import {
   CircleHelp,
   CreditCard,
   LogOut,
+  Plus,
   Settings,
   User,
 } from "lucide-react";
-import { organizationContextQueryOptions } from "@/client/features/team/organizationQueries";
+import {
+  organizationContextQueryOptions,
+  useIsReadOnlyViewer,
+} from "@/client/features/team/organizationQueries";
 import { switchOrganization } from "@/serverFunctions/organization";
 import { clearLastProjectId } from "@/client/lib/active-project";
 import {
@@ -29,7 +33,9 @@ import {
 import { ThemePreferenceRadio } from "@/client/components/ThemePreferenceMenuItems";
 import { getStandardErrorMessage } from "@/client/lib/error-messages";
 import { signOutAndRedirect, useSession } from "@/lib/auth-client";
-import { isEveryAppClientAuthMode } from "@/lib/auth-mode";
+import { getClientAuthMode, isEveryAppClientAuthMode } from "@/lib/auth-mode";
+import { hasOrgPermission } from "@/lib/org-permissions";
+import { CreateCustomerWorkspaceModal } from "@/client/features/team/CreateCustomerWorkspaceModal";
 import { everyAppAccountQueryOptions } from "@/client/features/every-app/everyAppAccountQueries";
 import { BILLING_ROUTE } from "@/shared/billing";
 import {
@@ -131,10 +137,13 @@ export function Sidebar({
   // the sidebar has its full shape from the first paint instead of growing
   // once projects load. The placeholder rows never render these links.
   const navPlaceholder = projectId === null && projectPending;
+  const readOnly = useIsReadOnlyViewer();
   const navGroups =
     projectId !== null || navPlaceholder
-      ? getProjectNavGroups(projectId ?? "")
-      : [connectNavGroup];
+      ? getProjectNavGroups(projectId ?? "", { readOnly })
+      : readOnly
+        ? []
+        : [connectNavGroup];
   const { pathname } = useLocation();
   const { setOpenMobile } = useSidebar();
   // SAM is hidden from navigation: the chat route is only reachable by URL,
@@ -248,6 +257,7 @@ function AccountFooter({ ready }: { ready: boolean }) {
     ? everyAppAccountQuery.data?.email
     : session?.user?.email;
   const [isSwitching, setIsSwitching] = useState(false);
+  const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const orgContextQuery = useQuery({
     ...organizationContextQueryOptions(),
     enabled: Boolean(email) && !everyApp,
@@ -256,6 +266,12 @@ function AccountFooter({ ready }: { ready: boolean }) {
     ? []
     : (orgContextQuery.data?.organizations ?? []);
   const activeOrganizationId = orgContextQuery.data?.organizationId;
+  const canCreateWorkspace =
+    getClientAuthMode() === "password" &&
+    Boolean(
+      orgContextQuery.data &&
+      hasOrgPermission(orgContextQuery.data.role, { billing: ["manage"] }),
+    );
 
   async function handleSwitchOrganization(organizationId: string) {
     if (isSwitching || organizationId === activeOrganizationId) return;
@@ -333,6 +349,12 @@ function AccountFooter({ ready }: { ready: boolean }) {
                     <DropdownMenuSeparator />
                   </>
                 ) : null}
+                {canCreateWorkspace ? (
+                  <DropdownMenuItem onClick={() => setCreatingWorkspace(true)}>
+                    <Plus className="size-4" />
+                    New customer workspace
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem
                   render={
                     <Link to="/settings" onClick={() => setOpenMobile(false)} />
@@ -382,6 +404,11 @@ function AccountFooter({ ready }: { ready: boolean }) {
           </SidebarMenuItem>
         )}
       </SidebarMenu>
+      {creatingWorkspace ? (
+        <CreateCustomerWorkspaceModal
+          onClose={() => setCreatingWorkspace(false)}
+        />
+      ) : null}
     </UiSidebarFooter>
   );
 }

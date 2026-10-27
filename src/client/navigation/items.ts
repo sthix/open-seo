@@ -112,9 +112,35 @@ function getProjectNavItems(projectId: string) {
   );
 }
 
+// Read-only viewers see the pages that show stored data; research tools,
+// project context and agent setup would only fail for them.
+const viewerPaths = new Set<string>([
+  "/p/$projectId",
+  "/p/$projectId/ai-visibility",
+  "/p/$projectId/search-performance",
+  "/p/$projectId/rank-tracking",
+  "/p/$projectId/saved",
+  "/p/$projectId/audit",
+  "/p/$projectId/reports",
+]);
+
+export function getProjectNavGroups(
+  projectId: string,
+  { readOnly = false }: { readOnly?: boolean } = {},
+) {
+  const groups = getAllProjectNavGroups(projectId);
+  if (!readOnly) return groups;
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => viewerPaths.has(item.to)),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
 // Grouped by scope: "My Site" is the project's own domain (tracked data),
 // "Research" is point-at-anything lookup tools.
-export function getProjectNavGroups(projectId: string) {
+function getAllProjectNavGroups(projectId: string) {
   const all = getProjectNavItems(projectId);
   const byPath = (path: (typeof projectNavItems)[number]["to"]) =>
     all.find((i) => i.to === path)!;

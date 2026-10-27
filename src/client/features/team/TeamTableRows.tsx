@@ -11,6 +11,7 @@ const ROLE_LABELS: Record<string, string> = {
   owner: "Owner",
   admin: "Admin",
   member: "Member",
+  viewer: "Viewer",
 };
 
 function formatRole(role: string) {
