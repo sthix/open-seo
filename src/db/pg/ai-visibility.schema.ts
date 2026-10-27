@@ -115,6 +115,9 @@ export const aiObservations = pgTable(
     collectedAt: text("collected_at"),
     // Null on a completed row means the engine gave no answer.
     answerMarkdown: text("answer_markdown"),
+    // Set when retention cleared the answer text. Its sources and brand
+    // results stay, so the answer still counts as answered.
+    answerClearedAt: text("answer_cleared_at"),
     error: text("error"),
   },
   (t) => [
@@ -124,6 +127,7 @@ export const aiObservations = pgTable(
       t.engine,
     ),
     index("ai_observations_prompt_idx").on(t.promptId),
+    index("ai_observations_collected_idx").on(t.collectedAt),
   ],
 );
 

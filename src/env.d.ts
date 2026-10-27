@@ -121,6 +121,9 @@ declare namespace Cloudflare {
     OPENROUTER_API_KEY?: string;
     // Optional OpenRouter model slug override (defaults in openrouter.ts).
     OPENROUTER_MODEL?: string;
+    // Days to keep AI visibility answer text (default 90). Sources and brand
+    // results stay until the run is deleted after 13 months.
+    AI_ANSWER_RETENTION_DAYS?: string;
 
     // Self-hosted AI visibility with the operator's own keys instead of
     // DataForSEO (providers/directLlm.ts). Comma-separated engines, e.g.

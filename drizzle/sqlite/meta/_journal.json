@@ -449,6 +449,20 @@
       "when": 1793048648500,
       "tag": "0063_sad_starhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "6",
+      "when": 1793114006734,
+      "tag": "0064_brand_aliases",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "6",
+      "when": 1793119865721,
+      "tag": "0065_ai_answer_retention",
+      "breakpoints": true
     }
   ]
 }

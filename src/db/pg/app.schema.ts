@@ -89,6 +89,9 @@ export const projects = pgTable(
     // The Prompt Research keywords from AI visibility setup, one
     // per line, most important first. Null until setup runs.
     aiResearchKeywords: text("ai_research_keywords"),
+    // Other names the brand goes by in AI answers, one per line. Null when
+    // there are none.
+    brandAliases: text("brand_aliases"),
     // The IndexNow key the site hosts at /{key}.txt. Public by design, so it
     // is stored as plain text. Null until IndexNow is first used.
     indexnowKey: text("indexnow_key"),

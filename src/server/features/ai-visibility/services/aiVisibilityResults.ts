@@ -71,7 +71,7 @@ function rowsFor(
     answerStatus:
       o.status !== "completed"
         ? null
-        : o.answerMarkdown
+        : o.answerMarkdown || o.answerClearedAt
           ? "answered"
           : "no_answer",
     collectedAt: o.collectedAt,
@@ -264,6 +264,7 @@ function answerView(
     observation: row,
     answerText: answerText?.slice(0, limit) ?? null,
     answerMarkdown: markdown?.slice(0, limit) ?? null,
+    answerClearedAt: observation.answerClearedAt,
     sources: evidence.sources.map(({ url, domain, title, position }) => ({
       url,
       domain,

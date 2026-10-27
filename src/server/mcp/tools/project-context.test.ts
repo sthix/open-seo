@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   listSections: vi.fn(),
   upsertSection: vi.fn(),
   listCompetitors: vi.fn(),
+  getBrandAliases: vi.fn(),
   listKeyPages: vi.fn(),
   listResearchLog: vi.fn(),
   listTemplates: vi.fn(),

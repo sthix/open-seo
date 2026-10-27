@@ -73,6 +73,7 @@ services:
       PERPLEXITY_MODEL: ${PERPLEXITY_MODEL:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-}
+      AI_ANSWER_RETENTION_DAYS: ${AI_ANSWER_RETENTION_DAYS:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     volumes: [config:/config, web-config:/web-config]

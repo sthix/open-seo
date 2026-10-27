@@ -110,10 +110,11 @@ beforeAll(async () => {
   // Use the actual context migration so conflict keys match production.
   await client.executeMultiple(
     [
-      `CREATE TABLE projects (id text PRIMARY KEY, organization_id text, name text NOT NULL, domain text, archived_at text, ai_research_keywords text);`,
+      `CREATE TABLE projects (id text PRIMARY KEY, organization_id text, name text NOT NULL, domain text, archived_at text, ai_research_keywords text, brand_aliases text);`,
       ...readFileSync("drizzle/sqlite/0042_project_memory.sql", "utf8")
         .split("--> statement-breakpoint")
         .filter((sql) => !sql.includes("DROP TABLE")),
+      `ALTER TABLE project_competitors ADD aliases text;`,
     ].join("\n"),
   );
 });

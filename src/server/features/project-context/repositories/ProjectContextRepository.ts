@@ -6,6 +6,7 @@ import {
   projectContextSections,
   projectKeyPages,
   projectResearchLog,
+  projects,
 } from "@/db/schema";
 import type {
   ContextAuthor,
@@ -22,6 +23,7 @@ type Tx = Parameters<Parameters<typeof runBatch>[0]>[0];
 type CompetitorRow = {
   domain: string;
   name: string | null;
+  aliases: string | null;
   notes: string | null;
 };
 
@@ -127,12 +129,29 @@ function upsertCompetitors(
         target: [projectCompetitors.projectId, projectCompetitors.domain],
         set: {
           name: sql`coalesce(excluded.name, ${projectCompetitors.name})`,
+          aliases: sql`coalesce(excluded.aliases, ${projectCompetitors.aliases})`,
           notes: sql`coalesce(excluded.notes, ${projectCompetitors.notes})`,
           updatedAt,
           updatedBy,
         },
       }),
   );
+}
+
+async function getBrandAliases(projectId: string) {
+  const [row] = await db
+    .select({ brandAliases: projects.brandAliases })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
+  return row?.brandAliases ?? null;
+}
+
+function setBrandAliases(tx: Tx, projectId: string, aliases: string) {
+  return tx
+    .update(projects)
+    .set({ brandAliases: aliases })
+    .where(eq(projects.id, projectId));
 }
 
 function deleteCompetitors(tx: Tx, projectId: string, domains: string[]) {
@@ -273,6 +292,8 @@ export const ProjectContextRepository = {
   listCompetitors,
   upsertCompetitors,
   deleteCompetitors,
+  getBrandAliases,
+  setBrandAliases,
   listKeyPages,
   upsertKeyPages,
   deleteKeyPages,

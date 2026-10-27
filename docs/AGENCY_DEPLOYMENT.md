@@ -55,12 +55,12 @@ installation can ask ChatGPT, Gemini, Claude and Perplexity through their own
 APIs instead, with your keys. Name the engines in
 `AI_VISIBILITY_DIRECT_ENGINES` and set each engine's key:
 
-| Engine | Key | API used |
-|---|---|---|
-| `chatgpt` | `OPENAI_API_KEY` | OpenAI Responses API with web search |
-| `gemini` | `GEMINI_API_KEY` | Gemini with Google Search grounding |
-| `claude` | `ANTHROPIC_API_KEY` | Claude with the web search tool |
-| `perplexity` | `PERPLEXITY_API_KEY` | Perplexity `sonar` |
+| Engine       | Key                  | API used                             |
+| ------------ | -------------------- | ------------------------------------ |
+| `chatgpt`    | `OPENAI_API_KEY`     | OpenAI Responses API with web search |
+| `gemini`     | `GEMINI_API_KEY`     | Gemini with Google Search grounding  |
+| `claude`     | `ANTHROPIC_API_KEY`  | Claude with the web search tool      |
+| `perplexity` | `PERPLEXITY_API_KEY` | Perplexity `sonar`                   |
 
 For example, `AI_VISIBILITY_DIRECT_ENGINES=claude,perplexity,gemini` keeps
 ChatGPT and Google AI Overviews on DataForSEO, which reads the consumer apps,
@@ -75,6 +75,24 @@ from what the consumer apps show. Each provider bills these answers directly,
 and the cost estimate in OpenSEO leaves them out. Check each provider's data
 handling terms before sending customer prompts. This setting has no effect on
 the hosted service.
+
+## Brand names in Prompt Tracking
+
+Prompt Tracking counts a brand as mentioned when an AI answer names it, its
+domain, or one of its other names. Add other names, such as "HelpScout" for
+"Help Scout" or a former brand name, under Brand names and on each competitor
+in the project's Context page. Agents can set them with
+`update_project_context`. New names apply to answers collected from then on;
+earlier results are not recalculated.
+
+## How long AI answers are kept
+
+AI answers can quote real people, so Prompt Tracking clears the text of each
+answer 90 days after it was collected. The answer's brand results, sources and
+trends stay until the run itself is deleted after 13 months, and the answer
+view says the text was removed. Set `AI_ANSWER_RETENTION_DAYS` to keep text
+for a different number of days, and name the period in your record of
+processing activities.
 
 ## Analytics
 

@@ -68,6 +68,29 @@ describe("brand mentions", () => {
   });
 });
 
+describe("brand aliases", () => {
+  const helpScout = {
+    name: "Help Scout",
+    domain: "helpscout.com",
+    aliases: ["HelpScout"],
+  };
+
+  it.each([
+    ["Teams like HelpScout for shared inboxes.", 11],
+    ["HelpScout first, then Help Scout again.", 0],
+    ["HelpScouting is not a product.", null],
+  ])("%s", (text, firstMention) => {
+    expect(matchAiBrand(answer(text), helpScout)).toMatchObject({
+      mentioned: firstMention !== null,
+      firstMention,
+    });
+  });
+
+  it("counts a prompt naming an alias as branded", () => {
+    expect(aiPromptIsBranded("Is HelpScout worth it?", helpScout)).toBe(true);
+  });
+});
+
 describe("brand citations", () => {
   it.each(["openseo.so", "www.openseo.so", "docs.openseo.so"])(
     "counts a cited page on %s",

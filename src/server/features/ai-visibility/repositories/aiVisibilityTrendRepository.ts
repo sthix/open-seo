@@ -32,9 +32,10 @@ export async function getTrendObservations(runIds: string[]) {
           engine: aiObservations.engine,
           branded: aiObservations.branded,
           status: aiObservations.status,
-          // Not the answer itself: trend reads hundreds of runs.
+          // Not the answer itself: trend reads hundreds of runs. Text that
+          // retention cleared was still an answer.
           hasAnswer:
-            sql<number>`CASE WHEN ${aiObservations.answerMarkdown} IS NULL THEN 0 ELSE 1 END`.mapWith(
+            sql<number>`CASE WHEN ${aiObservations.answerMarkdown} IS NULL AND ${aiObservations.answerClearedAt} IS NULL THEN 0 ELSE 1 END`.mapWith(
               Number,
             ),
           brandName: aiMatches.name,

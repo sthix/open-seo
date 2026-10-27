@@ -1,4 +1,5 @@
 import { sort } from "remeda";
+import { parseBrandAliases } from "@/shared/brand-aliases";
 import type { AiTrackerPatch } from "@/types/schemas/ai-visibility";
 import {
   AI_DEFAULT_TOPIC,
@@ -67,12 +68,28 @@ export function aiScope(config: ConfigurationRows, promptIds?: string[]) {
 
 /** The project's own brand, then its competitors, from shared project context. */
 export function aiBrands(
-  project: { name: string; domain: string | null },
-  competitors: { name: string | null; domain: string }[],
+  project: {
+    name: string;
+    domain: string | null;
+    brandAliases?: string | null;
+  },
+  competitors: {
+    name: string | null;
+    domain: string;
+    aliases?: string | null;
+  }[],
 ): AiBrand[] {
   if (!project.domain) return [];
   const brands = new Map<string, AiBrand>([
-    [project.domain, { name: project.name, domain: project.domain, own: true }],
+    [
+      project.domain,
+      {
+        name: project.name,
+        domain: project.domain,
+        own: true,
+        aliases: parseBrandAliases(project.brandAliases ?? null),
+      },
+    ],
   ]);
   for (const c of competitors)
     if (!brands.has(c.domain))
@@ -80,6 +97,7 @@ export function aiBrands(
         name: c.name ?? c.domain,
         domain: c.domain,
         own: false,
+        aliases: parseBrandAliases(c.aliases ?? null),
       });
   return [...brands.values()];
 }
