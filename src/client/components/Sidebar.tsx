@@ -11,6 +11,7 @@ import {
   CircleHelp,
   CreditCard,
   LogOut,
+  Plus,
   Settings,
   User,
 } from "lucide-react";
@@ -29,7 +30,9 @@ import {
 import { ThemePreferenceRadio } from "@/client/components/ThemePreferenceMenuItems";
 import { getStandardErrorMessage } from "@/client/lib/error-messages";
 import { signOutAndRedirect, useSession } from "@/lib/auth-client";
-import { isEveryAppClientAuthMode } from "@/lib/auth-mode";
+import { getClientAuthMode, isEveryAppClientAuthMode } from "@/lib/auth-mode";
+import { hasOrgPermission } from "@/lib/org-permissions";
+import { CreateCustomerWorkspaceModal } from "@/client/features/team/CreateCustomerWorkspaceModal";
 import { everyAppAccountQueryOptions } from "@/client/features/every-app/everyAppAccountQueries";
 import { BILLING_ROUTE } from "@/shared/billing";
 import {
@@ -248,6 +251,7 @@ function AccountFooter({ ready }: { ready: boolean }) {
     ? everyAppAccountQuery.data?.email
     : session?.user?.email;
   const [isSwitching, setIsSwitching] = useState(false);
+  const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const orgContextQuery = useQuery({
     ...organizationContextQueryOptions(),
     enabled: Boolean(email) && !everyApp,
@@ -256,6 +260,12 @@ function AccountFooter({ ready }: { ready: boolean }) {
     ? []
     : (orgContextQuery.data?.organizations ?? []);
   const activeOrganizationId = orgContextQuery.data?.organizationId;
+  const canCreateWorkspace =
+    getClientAuthMode() === "password" &&
+    Boolean(
+      orgContextQuery.data &&
+      hasOrgPermission(orgContextQuery.data.role, { billing: ["manage"] }),
+    );
 
   async function handleSwitchOrganization(organizationId: string) {
     if (isSwitching || organizationId === activeOrganizationId) return;
@@ -333,6 +343,12 @@ function AccountFooter({ ready }: { ready: boolean }) {
                     <DropdownMenuSeparator />
                   </>
                 ) : null}
+                {canCreateWorkspace ? (
+                  <DropdownMenuItem onClick={() => setCreatingWorkspace(true)}>
+                    <Plus className="size-4" />
+                    New customer workspace
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem
                   render={
                     <Link to="/settings" onClick={() => setOpenMobile(false)} />
@@ -382,6 +398,11 @@ function AccountFooter({ ready }: { ready: boolean }) {
           </SidebarMenuItem>
         )}
       </SidebarMenu>
+      {creatingWorkspace ? (
+        <CreateCustomerWorkspaceModal
+          onClose={() => setCreatingWorkspace(false)}
+        />
+      ) : null}
     </UiSidebarFooter>
   );
 }
