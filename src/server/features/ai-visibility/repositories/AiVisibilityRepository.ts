@@ -1,4 +1,15 @@
-import { and, asc, desc, eq, inArray, isNull, lte, ne } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  ne,
+  or,
+} from "drizzle-orm";
 import { chunk } from "remeda";
 import { db } from "@/db";
 import { runBatch } from "@/db/runBatch";
@@ -97,6 +108,7 @@ const observationColumns = {
   status: aiObservations.status,
   collectedAt: aiObservations.collectedAt,
   answerMarkdown: aiObservations.answerMarkdown,
+  answerClearedAt: aiObservations.answerClearedAt,
   error: aiObservations.error,
   prompt: aiPrompts.text,
   topic: aiPrompts.topic,
@@ -164,7 +176,8 @@ async function getEvidence(observationIds: string[]) {
 
 /**
  * Prompts with at least one collected answer, in any run. A completed
- * collection with no answer text (no AI Overview shown) does not count.
+ * collection with no answer text (no AI Overview shown) does not count; an
+ * answer whose text retention cleared does.
  */
 async function listAnsweredPromptIds(trackerId: string) {
   const rows = await db
@@ -175,8 +188,11 @@ async function listAnsweredPromptIds(trackerId: string) {
       and(
         eq(aiPrompts.trackerId, trackerId),
         eq(aiObservations.status, "completed"),
-        // SQL `<> ''` is also false for NULL, so this excludes both.
-        ne(aiObservations.answerMarkdown, ""),
+        or(
+          // SQL `<> ''` is also false for NULL, so this excludes both.
+          ne(aiObservations.answerMarkdown, ""),
+          isNotNull(aiObservations.answerClearedAt),
+        ),
       ),
     );
   return rows.map((row) => row.promptId);

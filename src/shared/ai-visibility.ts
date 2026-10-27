@@ -207,6 +207,8 @@ export interface AiAnswer {
   observation: AiObservationRow;
   answerText: string | null;
   answerMarkdown: string | null;
+  /** When retention cleared the text; sources and brand results remain. */
+  answerClearedAt: string | null;
   /** Cited pages, in the engine's order. */
   sources: AiSource[];
   /** Where each mentioned brand appears in answerText. */

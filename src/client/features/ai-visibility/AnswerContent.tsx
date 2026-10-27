@@ -131,6 +131,12 @@ function AnswerEvidence({ answer }: { answer: AiAnswer }) {
             </ReactMarkdown>
           ) : answer.answerText ? (
             <div className="whitespace-pre-wrap">{answer.answerText}</div>
+          ) : answer.answerClearedAt ? (
+            <p className="text-muted-foreground">
+              The answer text was removed after the retention period, because
+              answers can quote real people. Its brand results and sources are
+              kept.
+            </p>
           ) : (
             <p className="text-muted-foreground">
               No answer was captured. Status:{" "}

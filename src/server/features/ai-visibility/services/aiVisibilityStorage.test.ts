@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   putCursor: vi.fn(),
   deleteCursor: vi.fn(),
   prune: vi.fn(),
+  clearText: vi.fn(),
 }));
 vi.mock("cloudflare:workers", () => ({
   env: {
@@ -22,6 +23,10 @@ vi.mock("cloudflare:workers", () => ({
 }));
 vi.mock("../repositories/aiVisibilityRetentionRepository", () => ({
   pruneAiHistory: mocks.prune,
+  clearAnswerTextBefore: mocks.clearText,
+}));
+vi.mock("@/server/lib/runtime-env", () => ({
+  getOptionalEnvValue: async () => undefined,
 }));
 
 const now = new Date("2026-09-05T12:00:00Z");
@@ -77,6 +82,10 @@ describe("AI visibility storage", () => {
     await pruneAiVisibility();
 
     expect(mocks.prune).toHaveBeenCalledExactlyOnceWith(now);
+    expect(mocks.clearText).toHaveBeenCalledExactlyOnceWith(
+      new Date("2026-06-07T12:00:00Z"),
+      now,
+    );
     expect(mocks.deleteObjects).toHaveBeenCalledExactlyOnceWith([
       "ai-visibility/a/exports/expired",
       "ai-visibility/a/exports/no-expiry",
