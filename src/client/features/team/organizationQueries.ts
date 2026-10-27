@@ -9,6 +9,13 @@ export const organizationContextQueryOptions = () =>
     staleTime: 60 * 1000,
   });
 
+// False while loading, like useCanManageBilling's optimism: this only trims
+// navigation, and the server refuses every non-read call from a viewer.
+export function useIsReadOnlyViewer() {
+  const { data } = useQuery(organizationContextQueryOptions());
+  return data ? !hasOrgPermission(data.role, { workspace: ["edit"] }) : false;
+}
+
 // True while loading: the sole-owner workspace is the overwhelmingly common
 // case, and every billing surface is enforced server-side anyway — favor not
 // flashing "ask your owner" at actual owners. This is a deliberate cosmetic

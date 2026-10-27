@@ -6,6 +6,7 @@ import { findLast } from "remeda";
 import { FolderCog, Plus, Settings } from "lucide-react";
 import { setLastProjectId } from "@/client/lib/active-project";
 import { CreateProjectModal } from "@/client/features/projects/CreateProjectModal";
+import { useIsReadOnlyViewer } from "@/client/features/team/organizationQueries";
 import {
   Combobox,
   ComboboxContent,
@@ -42,6 +43,7 @@ export function ProjectSwitcher({
 }) {
   const router = useRouter();
   const [creating, setCreating] = React.useState(false);
+  const readOnly = useIsReadOnlyViewer();
   const [open, setOpen] = React.useState(false);
   const projectsQuery = useQuery({ ...projectsQueryOptions(), enabled: ready });
   const projects = projectsQuery.data ?? [];
@@ -123,7 +125,7 @@ export function ProjectSwitcher({
               ) : null}
             </span>
           </ComboboxTrigger>
-          {activeProject ? (
+          {activeProject && !readOnly ? (
             <Button
               nativeButton={false}
               render={
@@ -171,37 +173,41 @@ export function ProjectSwitcher({
               </ComboboxItem>
             )}
           </ComboboxList>
-          <Separator />
-          <div className="grid gap-0.5 p-1">
-            <Button
-              variant="ghost"
-              className="justify-start"
-              onClick={() => {
-                setOpen(false);
-                setCreating(true);
-              }}
-            >
-              <Plus className="size-4" />
-              New project
-            </Button>
-            <Button
-              nativeButton={false}
-              render={
-                <Link
-                  to="/projects"
+          {readOnly ? null : (
+            <>
+              <Separator />
+              <div className="grid gap-0.5 p-1">
+                <Button
+                  variant="ghost"
+                  className="justify-start"
                   onClick={() => {
                     setOpen(false);
-                    onCloseDrawer?.();
+                    setCreating(true);
                   }}
-                />
-              }
-              variant="ghost"
-              className="justify-start"
-            >
-              <FolderCog className="size-4" />
-              Manage projects
-            </Button>
-          </div>
+                >
+                  <Plus className="size-4" />
+                  New project
+                </Button>
+                <Button
+                  nativeButton={false}
+                  render={
+                    <Link
+                      to="/projects"
+                      onClick={() => {
+                        setOpen(false);
+                        onCloseDrawer?.();
+                      }}
+                    />
+                  }
+                  variant="ghost"
+                  className="justify-start"
+                >
+                  <FolderCog className="size-4" />
+                  Manage projects
+                </Button>
+              </div>
+            </>
+          )}
         </ComboboxContent>
       </Combobox>
       {creating ? (

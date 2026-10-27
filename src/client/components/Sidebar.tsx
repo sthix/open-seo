@@ -15,7 +15,10 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import { organizationContextQueryOptions } from "@/client/features/team/organizationQueries";
+import {
+  organizationContextQueryOptions,
+  useIsReadOnlyViewer,
+} from "@/client/features/team/organizationQueries";
 import { switchOrganization } from "@/serverFunctions/organization";
 import { clearLastProjectId } from "@/client/lib/active-project";
 import {
@@ -134,10 +137,13 @@ export function Sidebar({
   // the sidebar has its full shape from the first paint instead of growing
   // once projects load. The placeholder rows never render these links.
   const navPlaceholder = projectId === null && projectPending;
+  const readOnly = useIsReadOnlyViewer();
   const navGroups =
     projectId !== null || navPlaceholder
-      ? getProjectNavGroups(projectId ?? "")
-      : [connectNavGroup];
+      ? getProjectNavGroups(projectId ?? "", { readOnly })
+      : readOnly
+        ? []
+        : [connectNavGroup];
   const { pathname } = useLocation();
   const { setOpenMobile } = useSidebar();
   // SAM is hidden from navigation: the chat route is only reachable by URL,

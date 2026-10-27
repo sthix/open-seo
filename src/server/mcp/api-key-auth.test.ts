@@ -153,6 +153,20 @@ describe("handleMcpApiKeyRequest", () => {
     expect(mocks.handleAuthenticatedOpenSeoMcpRequest).not.toHaveBeenCalled();
   });
 
+  it("returns 403 for a read-only viewer's key", async () => {
+    mocks.verifyApiKey.mockResolvedValue(boundKey);
+    mocks.getMembership.mockResolvedValue({ role: "viewer" });
+
+    const response = await handleMcpApiKeyRequest(
+      request({ Authorization: "Bearer oseo_secret" }),
+      env,
+      ctx,
+    );
+
+    expect(response?.status).toBe(403);
+    expect(mocks.handleAuthenticatedOpenSeoMcpRequest).not.toHaveBeenCalled();
+  });
+
   it("returns 401 for an invalid key without invoking the transport", async () => {
     mocks.verifyApiKey.mockResolvedValue({
       valid: false,

@@ -6,13 +6,27 @@ import { QueryError } from "@/client/components/QueryState";
 import { SkeletonPageContent } from "@/client/components/SkeletonPresets";
 import { Button } from "@/client/components/ui/button";
 import { useSamAccess } from "@/client/features/sam/useSamAccess";
+import { useIsReadOnlyViewer } from "@/client/features/team/organizationQueries";
 
 /**
  * AI visibility setup researches the brand and suggests prompts through
  * OpenRouter, so a self-hosted install without a key would only fail after
  * the user starts research. Ask for the key first (hosted always has one).
+ * Read-only viewers never start research, so they go straight to the results.
  */
 export function OpenRouterKeyGate({
+  projectId,
+  children,
+}: {
+  projectId: string;
+  children: ReactNode;
+}) {
+  const readOnly = useIsReadOnlyViewer();
+  if (readOnly) return children;
+  return <KeyGate projectId={projectId}>{children}</KeyGate>;
+}
+
+function KeyGate({
   projectId,
   children,
 }: {

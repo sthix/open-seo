@@ -37,6 +37,7 @@ import { GDPR_STORAGE_ERASURE_PATH } from "@/shared/gdpr-erasure";
 import { handleOperatorRequest } from "@/server/standalone/admin";
 import { handleImport, isLegacyImportActive } from "@/server/standalone/import";
 import { hasOperatorSecret } from "@/server/standalone/operator-auth";
+import { canEditWorkspace } from "@/server/auth/viewer-access";
 
 const startHandler = createStartHandler(defaultStreamHandler);
 
@@ -88,6 +89,9 @@ async function authorizeSamChat(
     context = await resolveUserContextFromHeaders(request.headers);
   } catch {
     return new Response("Unauthorized", { status: 401 });
+  }
+  if (!canEditWorkspace(context.role)) {
+    return new Response("Forbidden", { status: 403 });
   }
   const session = await SamSessionRepository.getActiveSession(
     sessionId,

@@ -5,7 +5,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { getAuth, getHostedBaseUrl } from "@/lib/auth";
 import { isEveryAppAuthMode, isHostedAuthMode } from "@/lib/auth-mode";
-import { hasOrgPermission } from "@/lib/org-permissions";
+import { hasOrgPermission, INVITABLE_ROLES } from "@/lib/org-permissions";
 import { consumeInvitationSendBudget } from "@/server/auth/invitation-send-limit";
 import { createCustomerWorkspace } from "@/server/auth/customer-workspaces";
 import { requireOrgPermission } from "@/server/auth/org-gate";
@@ -135,7 +135,10 @@ export const switchOrganization = createServerFn({ method: "POST" })
     return { organizationId: data.organizationId };
   });
 
-const sendInvitationSchema = z.object({ email: z.string().email() });
+const sendInvitationSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(INVITABLE_ROLES),
+});
 
 // Invite (or re-invite) a teammate. better-auth creates the pending
 // invitation — its server-side checks (inviter must be a member with invite
@@ -161,7 +164,7 @@ export const sendTeamInvitation = createServerFn({ method: "POST" })
         headers: getRequest().headers,
         body: {
           email: data.email,
-          role: "admin",
+          role: data.role,
           resend: true,
           // Bind the invitation to the request's resolved org, not the session's
           // active-organization hint, which can be stale after a switch.
