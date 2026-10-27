@@ -39,3 +39,29 @@ export const ga4Connections = sqliteTable(
     ),
   ],
 );
+
+export const analyticsConnections = sqliteTable(
+  "analytics_connections",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    region: text("region").notNull(),
+    propertyId: text("property_id").notNull(),
+    encryptedKey: text("encrypted_key").notNull(),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  },
+  (table) => [
+    uniqueIndex("analytics_connections_project_provider_idx").on(
+      table.projectId,
+      table.provider,
+    ),
+  ],
+);

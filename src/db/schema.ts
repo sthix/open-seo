@@ -125,6 +125,7 @@ export const {
   invitation,
   billingCustomerStatus,
   ga4Connections,
+  analyticsConnections,
   gscConnections,
   telemetryState,
   aiTrackers,
