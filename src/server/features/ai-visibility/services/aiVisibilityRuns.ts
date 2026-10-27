@@ -20,7 +20,7 @@ import { requireConfiguration } from "./aiVisibilityMutation";
 import { aiPromptIsBranded } from "./aiVisibilityMatching";
 import { aiRunView } from "./aiVisibilityResults";
 import { aiCostForAnswers } from "./aiVisibilityCost";
-import { hasDataforseoAccess } from "@/server/lib/provider-access";
+import { canCollectAiAnswers } from "../providers/directLlm";
 import { startWorkflow } from "@/server/lib/startWorkflow";
 
 const ACTIVE_WORKFLOW_STATUSES = new Set([
@@ -73,11 +73,6 @@ export async function startRun(
   billing: BillingCustomerContext,
   promptIds?: string[],
 ): Promise<AiRun> {
-  if (!(await hasDataforseoAccess()))
-    throw new AiVisibilityError(
-      "PROVIDER_NOT_CONFIGURED",
-      "An operator must configure DATAFORSEO_API_KEY before collection. Your saved tracker remains available.",
-    );
   const project = await repo.getProject(config.tracker.projectId);
   if (
     !project?.domain ||
@@ -93,6 +88,11 @@ export async function startRun(
     throw new AiVisibilityError(
       "NO_ACTIVE_PROMPTS",
       "Add or unpause prompts before starting a check.",
+    );
+  if (!(await canCollectAiAnswers(scope.engines)))
+    throw new AiVisibilityError(
+      "PROVIDER_NOT_CONFIGURED",
+      "An operator must configure DATAFORSEO_API_KEY before collection. Your saved tracker remains available.",
     );
   // Hosted checks need credits for every answer before they start, like rank
   // checks. The tracker says why no check ran, whichever path started it.

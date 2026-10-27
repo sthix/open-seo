@@ -124,6 +124,19 @@ declare namespace Cloudflare {
     // Days to keep AI visibility answer text (default 90). Sources and brand
     // results stay until the run is deleted after 13 months.
     AI_ANSWER_RETENTION_DAYS?: string;
+
+    // Self-hosted AI visibility with the operator's own keys instead of
+    // DataForSEO (providers/directLlm.ts). Comma-separated engines, e.g.
+    // "claude,perplexity,gemini".
+    AI_VISIBILITY_DIRECT_ENGINES?: string;
+    OPENAI_API_KEY?: string;
+    PERPLEXITY_API_KEY?: string;
+    GEMINI_API_KEY?: string;
+    ANTHROPIC_API_KEY?: string;
+    OPENAI_MODEL?: string;
+    PERPLEXITY_MODEL?: string;
+    GEMINI_MODEL?: string;
+    CLAUDE_MODEL?: string;
   }
 }
 

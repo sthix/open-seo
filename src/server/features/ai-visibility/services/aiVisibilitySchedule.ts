@@ -1,7 +1,7 @@
 import { AppError } from "@/server/lib/errors";
 import { AiVisibilityRepository as repo } from "../repositories/AiVisibilityRepository";
 import { AiVisibilityError } from "./aiVisibilityErrors";
-import { activeAiPrompts } from "./aiVisibilityConfiguration";
+import { activeAiPrompts, trackerEngines } from "./aiVisibilityConfiguration";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
 import type { AiRun } from "@/shared/ai-visibility";
 import type { SetAiScheduleInput } from "@/types/schemas/ai-visibility";
@@ -9,7 +9,7 @@ import { computeNextCheckAt } from "@/shared/rank-tracking";
 import { requireConfiguration } from "./aiVisibilityMutation";
 import { getTracker } from "./aiVisibilityState";
 import { startRun } from "./aiVisibilityRuns";
-import { hasDataforseoAccess } from "@/server/lib/provider-access";
+import { canCollectAiAnswers } from "../providers/directLlm";
 
 /**
  * Enables, reschedules or pauses tracking. The first enable also collects a
@@ -33,7 +33,7 @@ export async function setSchedule(
       "NO_ACTIVE_PROMPTS",
       "Add active prompts before enabling scheduled tracking.",
     );
-  if (!(await hasDataforseoAccess()))
+  if (!(await canCollectAiAnswers(trackerEngines(tracker))))
     throw new AiVisibilityError(
       "PROVIDER_NOT_CONFIGURED",
       "Configure DataForSEO before enabling collection. Setup remains available.",

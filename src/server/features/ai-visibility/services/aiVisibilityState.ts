@@ -15,7 +15,7 @@ import {
 } from "./aiVisibilityConfiguration";
 import { aiRunView } from "./aiVisibilityResults";
 import { reconcileAiRun } from "./aiVisibilityRuns";
-import { hasDataforseoAccess } from "@/server/lib/provider-access";
+import { canCollectAiAnswers } from "../providers/directLlm";
 
 const CONSUMER_NOTE =
   "One consumer-site answer. Collects in any project market country except unsupportedLocationCodes.";
@@ -33,14 +33,14 @@ const AI_ENGINE_NOTES: Record<AiEngine, string> = {
 export async function getTracker(input: {
   projectId: string;
 }): Promise<AiTrackerState> {
-  const [config, competitors, recent, providerKey, project] = await Promise.all(
-    [
-      repo.getConfiguration(input.projectId),
-      repo.listCompetitors(input.projectId),
-      repo.listRuns(input.projectId, 10),
-      hasDataforseoAccess(),
-      repo.getProject(input.projectId),
-    ],
+  const [config, competitors, recent, project] = await Promise.all([
+    repo.getConfiguration(input.projectId),
+    repo.listCompetitors(input.projectId),
+    repo.listRuns(input.projectId, 10),
+    repo.getProject(input.projectId),
+  ]);
+  const providerKey = await canCollectAiAnswers(
+    config ? trackerEngines(config.tracker) : [],
   );
   // A run whose workflow stopped is failed here, so it never looks stuck.
   const runs = await Promise.all(recent.map((run) => reconcileAiRun(run)));

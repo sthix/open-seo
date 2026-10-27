@@ -23,6 +23,7 @@ import {
   parseLlmResponseAnswer,
   type ParsedAiAnswer,
 } from "../providers/dataforseoEvidence";
+import { askDirectAiEngine, getDirectAiEngines } from "../providers/directLlm";
 import { aiBrands } from "./aiVisibilityConfiguration";
 import { AI_ANSWER_FAILURES } from "./aiVisibilityErrors";
 import { matchAiBrand } from "./aiVisibilityMatching";
@@ -78,8 +79,9 @@ function errorMessage(error: unknown) {
  * Marks the run running and groups its answers into batches. Manual and
  * baseline runs collect live answers so the user sees results sooner.
  * Scheduled runs use the cheaper standard queue. Claude and Perplexity have no
- * LLM Scraper, so every run asks their model API (`modelBatches`). startRun
- * checked credits before the run was created.
+ * LLM Scraper, so every run asks their model API (`modelBatches`), as does
+ * every engine the deployment asks with its own keys. startRun checked credits
+ * before the run was created.
  */
 export async function prepareAiRun(
   runId: string,
@@ -107,11 +109,14 @@ export async function prepareAiRun(
     prompt: row.prompt,
     engine: row.engine,
   }));
+  const direct = await getDirectAiEngines();
+  const usesModelApi = (engine: AiEngine) =>
+    direct.has(engine) || aiEngineUsesModelApi(engine);
   const modelBatches = engineBatches(
-    tasks.filter((task) => aiEngineUsesModelApi(task.engine)),
+    tasks.filter((task) => usesModelApi(task.engine)),
     LIVE_ANSWERS_PER_STEP,
   );
-  const answers = tasks.filter((task) => !aiEngineUsesModelApi(task.engine));
+  const answers = tasks.filter((task) => !usesModelApi(task.engine));
   if (live) {
     const batches: AiLiveTask[][] = [];
     for (let i = 0; i < answers.length; i += LIVE_ANSWERS_PER_STEP)
@@ -252,7 +257,8 @@ async function fetchLiveAnswers(
  * arrives, so a slow call that hits the step timeout cannot discard answers
  * already paid for. An answer that DataForSEO's backend failed is asked again,
  * up to AI_ANSWER_ATTEMPTS. Model answers have no language setting: only the
- * country guides the web search.
+ * country guides the web search. An engine the deployment asks with its own
+ * keys goes to that engine's API instead, unmetered.
  */
 export async function collectAiModelBatch(
   runId: string,
@@ -261,13 +267,15 @@ export async function collectAiModelBatch(
   batch: AiTaskBatch,
 ): Promise<void> {
   const modelSlug = batch.engine;
-  if (!aiEngineUsesModelApi(modelSlug))
-    throw new AppError("INTERNAL_ERROR", `${modelSlug} has no model API batch`);
   const brands = await runBrands(runId);
   if (!brands) return;
+  const country = getIsoCountryCode(market.locationCode).toUpperCase();
+  if ((await getDirectAiEngines()).has(modelSlug))
+    return collectDirectBatch(runId, country, batch, brands);
+  if (!aiEngineUsesModelApi(modelSlug))
+    throw new AppError("INTERNAL_ERROR", `${modelSlug} has no model API batch`);
   const client = createDataforseoClient(customer);
   const modelName = await resolveLatestLlmModelName(modelSlug);
-  const country = getIsoCountryCode(market.locationCode).toUpperCase();
   await Promise.all(
     batch.tasks.map(async (task) => {
       for (let attempt = 1; ; attempt++) {
@@ -301,6 +309,38 @@ export async function collectAiModelBatch(
           await repo.failPendingObservations(runId, code, [task.tag]);
           return;
         }
+      }
+    }),
+  );
+}
+
+/**
+ * Asks each prompt of a batch through the engine's own API and saves each
+ * answer as it arrives. The request itself retries rate limits and server
+ * errors, so a failure here is final.
+ */
+async function collectDirectBatch(
+  runId: string,
+  country: string,
+  batch: AiTaskBatch,
+  brands: AiBrand[],
+) {
+  await Promise.all(
+    batch.tasks.map(async (task) => {
+      try {
+        const answer = await askDirectAiEngine(
+          batch.engine,
+          task.prompt,
+          country,
+        );
+        await saveAiAnswer(task.tag, answer, brands);
+      } catch (cause) {
+        console.warn(
+          `[ai-visibility] ${runId} answer ${task.tag} failed:`,
+          cause,
+        );
+        const code = asAppError(cause)?.code ?? "INTERNAL_ERROR";
+        await repo.failPendingObservations(runId, code, [task.tag]);
       }
     }),
   );

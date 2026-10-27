@@ -18,7 +18,10 @@ import {
 import { scheduledChecksPerMonth } from "@/shared/rank-tracking";
 import type { EstimateAiCostInput } from "@/types/schemas/ai-visibility";
 import { projectPatch } from "./aiVisibilityMutation";
-import { hasDataforseoAccess } from "@/server/lib/provider-access";
+import {
+  canCollectAiAnswers,
+  getDirectAiEngines,
+} from "../providers/directLlm";
 
 /**
  * Raw DataForSEO USD for one answer. Claude and Perplexity always use the
@@ -68,11 +71,17 @@ export async function estimateCost(
       "Set your project's website and pass proposed prompts, or save tracking before estimating.",
     );
   const scope = aiScope(config, input.promptIds);
+  // Engines asked with the deployment's own keys are billed by their own
+  // providers, so the DataForSEO estimate leaves them out.
+  const direct = await getDirectAiEngines();
+  const directEngines = scope.engines.filter((e) => direct.has(e));
+  const dataforseoEngines = scope.engines.filter((e) => !direct.has(e));
   const answers = scope.prompts.flatMap(() => scope.engines);
+  const billed = scope.prompts.flatMap(() => dataforseoEngines);
   const hosted = await isHostedServerAuthMode();
-  const cost = aiCostForAnswers(answers, hosted, "queued");
-  const runNow = aiCostForAnswers(answers, hosted, "live");
-  const liveEngines = scope.engines.filter(aiEngineUsesModelApi);
+  const cost = aiCostForAnswers(billed, hosted, "queued");
+  const runNow = aiCostForAnswers(billed, hosted, "live");
+  const liveEngines = dataforseoEngines.filter(aiEngineUsesModelApi);
   const scheduleInterval =
     input.scheduleInterval ?? current?.tracker.scheduleInterval ?? "weekly";
   const checksPerMonth = scheduledChecksPerMonth(scheduleInterval);
@@ -97,7 +106,12 @@ export async function estimateCost(
             `${liveEngines.map((e) => AI_ENGINE_LABELS[e]).join(" and ")} ${liveEngines.length === 1 ? "uses" : "use"} live API pricing, which costs more per answer.`,
           ]
         : []),
-      ...(!(await hasDataforseoAccess())
+      ...(directEngines.length
+        ? [
+            `${directEngines.map((e) => AI_ENGINE_LABELS[e]).join(", ")} ${directEngines.length === 1 ? "uses" : "use"} this server's own API keys. Those answers are billed by each provider and are not in this estimate.`,
+          ]
+        : []),
+      ...(!(await canCollectAiAnswers(scope.engines))
         ? [
             "DataForSEO is not configured on this server. Setup is available; collection needs an operator to add its API key.",
           ]

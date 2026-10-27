@@ -111,6 +111,25 @@ export function parseLlmResponseAnswer(
   };
 }
 
+/**
+ * An answer from any provider: its markdown and the sources it cites, as
+ * `{ url, title }` objects in the engine's order.
+ */
+export function parseCitedAnswer(
+  markdown: string,
+  sources: unknown[],
+  collectedAt: string | null,
+): ParsedAiAnswer {
+  const answerText = markdownToText(markdown);
+  const answered = answerText.trim().length > 0;
+  return {
+    answerMarkdown: answered ? markdown : null,
+    answerText: answered ? answerText : "",
+    citations: citationsFrom(sources),
+    collectedAt,
+  };
+}
+
 function dateOrNull(value: string | null | undefined): string | null {
   if (!value) return null;
   const date = new Date(value);
