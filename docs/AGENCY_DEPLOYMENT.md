@@ -48,6 +48,34 @@ optionally, `OPENROUTER_MODEL` as described in the Docker guide. API usage is
 billed by the provider. Check the provider's data handling terms before sending
 customer information to a model.
 
+## AI visibility with your own API keys
+
+Prompt Tracking normally collects answers through DataForSEO. A self-hosted
+installation can ask ChatGPT, Gemini, Claude and Perplexity through their own
+APIs instead, with your keys. Name the engines in
+`AI_VISIBILITY_DIRECT_ENGINES` and set each engine's key:
+
+| Engine | Key | API used |
+|---|---|---|
+| `chatgpt` | `OPENAI_API_KEY` | OpenAI Responses API with web search |
+| `gemini` | `GEMINI_API_KEY` | Gemini with Google Search grounding |
+| `claude` | `ANTHROPIC_API_KEY` | Claude with the web search tool |
+| `perplexity` | `PERPLEXITY_API_KEY` | Perplexity `sonar` |
+
+For example, `AI_VISIBILITY_DIRECT_ENGINES=claude,perplexity,gemini` keeps
+ChatGPT and Google AI Overviews on DataForSEO, which reads the consumer apps,
+and asks the other three directly. If every engine a tracker uses is listed,
+no DataForSEO key is needed for Prompt Tracking. An engine that is listed
+without its key fails its answers with a missing-configuration error.
+
+Engines search from the project's country, except Gemini, whose search follows
+the prompt's language. Optional model overrides are `OPENAI_MODEL`,
+`GEMINI_MODEL`, `CLAUDE_MODEL` and `PERPLEXITY_MODEL`. API answers can differ
+from what the consumer apps show. Each provider bills these answers directly,
+and the cost estimate in OpenSEO leaves them out. Check each provider's data
+handling terms before sending customer prompts. This setting has no effect on
+the hosted service.
+
 ## Analytics
 
 The project dashboard can show Google Analytics data after GA4 is connected.
