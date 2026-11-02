@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "cn";
+import { cn } from "@/client/boardui/utils/cx";
 import * as RechartsPrimitive from "recharts";
 import type { TooltipPayloadEntry, TooltipValueType } from "recharts";
 
@@ -65,7 +65,7 @@ function ChartContainer({
         data-slot="chart"
         data-chart={chartId}
         className={cn(
-          "flex w-full min-w-0 justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-(--trend-axis-color) [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-(--trend-grid-color) [&_.recharts-curve.recharts-tooltip-cursor]:stroke-(--trend-grid-color) [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-foreground/5 [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector]:outline-hidden [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-surface]:outline-hidden",
+          "flex w-full min-w-0 justify-center text-caption-1-regular [&_.recharts-cartesian-axis-tick_text]:fill-(--trend-axis-color) [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-(--trend-grid-color) [&_.recharts-curve.recharts-tooltip-cursor]:stroke-(--trend-grid-color) [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-background-tertiary-default [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-background-primary-hover [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector]:outline-hidden [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-surface]:outline-hidden",
           className,
         )}
         {...props}
@@ -191,7 +191,8 @@ function ChartTooltipContent({
   return (
     <div
       className={cn(
-        "grid min-w-32 items-start gap-1.5 rounded-lg border border-(--trend-tooltip-border) bg-(--trend-tooltip-bg) px-2.5 py-1.5 text-xs text-foreground shadow-[0_8px_24px_var(--trend-tooltip-shadow)]",
+        // BoardUI Tooltip surface (https://www.boardui.com/components/tooltip).
+        "grid min-w-32 items-start gap-1.5 rounded-lg border border-border-button-default bg-background-primary-default px-2.5 py-1.5 text-caption-1-medium text-text-primary shadow-dropdown",
         className,
       )}
     >
@@ -209,7 +210,7 @@ function ChartTooltipContent({
               <div
                 key={index}
                 className={cn(
-                  "flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground",
+                  "flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-foreground-icon-secondary",
                   indicator === "dot" && "items-center",
                 )}
               >
@@ -224,13 +225,11 @@ function ChartTooltipContent({
                         <div
                           className={cn(
                             "shrink-0 rounded-[2px] border-(--color-border) bg-(--color-bg)",
-                            {
-                              "h-2.5 w-2.5": indicator === "dot",
-                              "w-1": indicator === "line",
-                              "w-0 border-[1.5px] border-dashed bg-transparent":
-                                indicator === "dashed",
-                              "my-0.5": nestLabel && indicator === "dashed",
-                            },
+                            indicator === "dot" && "h-2.5 w-2.5 rounded-full",
+                            indicator === "line" && "w-1",
+                            indicator === "dashed" &&
+                              "w-0 border-[1.5px] border-dashed bg-transparent",
+                            nestLabel && indicator === "dashed" && "my-0.5",
                           )}
                           style={{
                             ["--color-bg" as string]: indicatorColor,
@@ -247,12 +246,12 @@ function ChartTooltipContent({
                     >
                       <div className="grid gap-1.5">
                         {nestLabel ? tooltipLabel : null}
-                        <span className="text-muted-foreground">
+                        <span className="text-text-secondary">
                           {itemConfig?.label ?? item.name}
                         </span>
                       </div>
                       {item.value != null && (
-                        <span className="font-medium text-foreground tabular-nums">
+                        <span className="text-caption-1-semibold text-text-primary tabular-nums">
                           {valueFormatter(item.value, item)}
                         </span>
                       )}
@@ -292,7 +291,7 @@ function ChartLegendContent({
   return (
     <div
       className={cn(
-        "flex items-center justify-center gap-4",
+        "flex items-center justify-center gap-4 text-caption-1-medium text-text-secondary",
         verticalAlign === "top" ? "pb-3" : "pt-3",
         className,
       )}
@@ -307,14 +306,14 @@ function ChartLegendContent({
             <div
               key={index}
               className={cn(
-                "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground",
+                "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-foreground-icon-secondary",
               )}
             >
               {itemConfig?.icon && !hideIcon ? (
                 <itemConfig.icon />
               ) : (
                 <div
-                  className="h-2 w-2 shrink-0 rounded-[2px]"
+                  className="size-2 shrink-0 rounded-full"
                   style={{
                     backgroundColor: item.color,
                   }}

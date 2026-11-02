@@ -112,7 +112,7 @@ export function AuthenticatedAppLayout({
         projectPending={sidebarProjectPending}
         ready={ready}
       />
-      <SidebarInset className="min-h-0 overflow-hidden md:!m-0 md:!mt-2 md:!rounded-none md:!rounded-tl-lg md:border-l md:border-t md:border-sidebar-border md:!shadow-none">
+      <SidebarInset className="min-h-0 overflow-hidden md:border md:border-separator-border">
         <MobileTopBar />
         <SeoApiStatusBanners
           shouldShowSeoApiWarning={shouldShowSeoApiWarning}
@@ -141,9 +141,9 @@ export function AuthenticatedAppLayout({
 
 function MobileTopBar() {
   return (
-    <div className="flex shrink-0 items-center gap-1 border-b border-border bg-card px-2 py-1.5 md:hidden">
+    <div className="flex shrink-0 items-center gap-1 border-b border-separator-border bg-background-primary-default px-2 py-1.5 md:hidden">
       <SidebarTrigger aria-label="Toggle sidebar" />
-      <Link to="/" className="ml-1 font-semibold text-foreground">
+      <Link to="/" className="ms-1 text-headline-semibold text-text-primary">
         OpenSEO
       </Link>
     </div>

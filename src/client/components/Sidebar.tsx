@@ -3,10 +3,11 @@ import type { LinkOptions } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ComponentType } from "react";
 import { toast } from "sonner";
-import { cn } from "cn";
+import { cn } from "@/client/boardui/utils/cx";
 import {
   ArrowLeftRight,
   Check,
+  ChevronsUpDown,
   ChevronLeft,
   CircleHelp,
   CreditCard,
@@ -62,8 +63,7 @@ import {
   DropdownMenuTrigger,
 } from "@/client/components/ui/dropdown-menu";
 
-const navButtonClass =
-  "relative text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:before:absolute data-active:before:inset-y-1 data-active:before:left-0 data-active:before:w-[3px] data-active:before:rounded-r-full data-active:before:bg-primary";
+const navButtonClass = "relative";
 
 function SidebarNavLink({
   icon: Icon,
@@ -94,7 +94,7 @@ function SidebarNavLink({
       aria-disabled={placeholder || undefined}
       className={navButtonClass}
     >
-      <Icon className="size-4" />
+      <Icon className="size-[18px]" />
       <span>{label}</span>
     </SidebarMenuButton>
   );
@@ -151,16 +151,22 @@ export function Sidebar({
   const onSamRoute = pathname.includes("/sam");
 
   return (
-    <UiSidebar variant="inset" collapsible="offcanvas" className="md:!p-0">
+    <UiSidebar variant="inset" collapsible="offcanvas">
       <SidebarHeader
-        className={cn("gap-0 px-3 pb-1", everyApp ? "pt-2" : "pt-3")}
+        className={cn("gap-0 px-3 pb-2", everyApp ? "pt-2" : "pt-3")}
       >
         {everyApp ? <EveryAppLink /> : null}
         <Link
           to="/"
           onClick={() => setOpenMobile(false)}
-          className="px-1 pb-2 text-base font-semibold text-sidebar-foreground"
+          className="flex items-center gap-2 px-1 pb-3 text-headline-semibold text-text-primary"
         >
+          <span
+            aria-hidden
+            className="flex size-7 items-center justify-center rounded-2lg bg-linear-to-b from-accent-500 to-accent-600 text-caption-1-bold text-white shadow-nav-selected"
+          >
+            O
+          </span>
           OpenSEO
         </Link>
         <ProjectSwitcher
@@ -189,7 +195,7 @@ export function Sidebar({
           >
             {navGroups.map((group) => (
               <SidebarGroup key={group.label} className="py-1">
-                <SidebarGroupLabel className="h-7 uppercase tracking-wider text-sidebar-foreground/40">
+                <SidebarGroupLabel className="h-8">
                   {group.label}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -236,7 +242,7 @@ function EveryAppLink() {
       href={gatewayUrl ?? undefined}
       aria-label="Back to Every App"
       className={cn(
-        "mb-1 inline-flex h-7 w-fit items-center gap-0.5 rounded-md pl-0.5 pr-2 text-sm text-sidebar-foreground/60 transition-colors hover:text-sidebar-foreground",
+        "mb-1 inline-flex h-7 w-fit items-center gap-0.5 rounded-2lg ps-0.5 pe-2 text-body-medium text-text-secondary transition-colors hover:text-text-primary",
         accountQuery.isPending && "invisible",
       )}
     >
@@ -289,7 +295,7 @@ function AccountFooter({ ready }: { ready: boolean }) {
   }
 
   return (
-    <UiSidebarFooter className="gap-0 border-t border-sidebar-border pb-safe">
+    <UiSidebarFooter className="gap-0 pb-safe">
       <SidebarMenu>
         <SidebarNavLink
           icon={CircleHelp}
@@ -308,15 +314,20 @@ function AccountFooter({ ready }: { ready: boolean }) {
               <DropdownMenuTrigger
                 render={
                   <SidebarMenuButton
-                    className={navButtonClass}
+                    size="lg"
+                    className="mt-1 h-11 rounded-xl bg-background-tertiary-default ps-3 pe-3 text-text-primary hover:bg-background-tertiary-hover data-open:bg-background-tertiary-hover"
                     aria-label="Open account menu"
                   />
                 }
               >
                 <User className="size-4" />
-                <span className="truncate" data-ph-mask>
+                <span
+                  className="min-w-0 flex-1 truncate text-body-medium text-text-primary"
+                  data-ph-mask
+                >
                   {email}
                 </span>
+                <ChevronsUpDown className="size-4! text-text-secondary" />
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" className="w-56">
                 {organizations.length > 1 ? (

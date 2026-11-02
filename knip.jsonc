@@ -51,6 +51,8 @@
   // Disable Drizzle plugin - it tries to load drizzle/sqlite.config.ts which imports cloudflare:workers
   "drizzle": false,
   "ignoreDependencies": [
+    // Imported from src/client/styles/app.css, which Knip does not parse.
+    "@fontsource-variable/inter",
     // Resolved on purpose through another package's dependency tree with
     // require.resolve(name, { paths }): the standalone build's portable
     // password hash via better-auth (vite.config.ts), and the legacy Docker
