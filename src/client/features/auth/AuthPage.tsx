@@ -13,10 +13,8 @@ export const authRedirectSearchSchema = z.object({
 
 // The auth forms keep their pre-shadcn look: white inputs with 16px text, and a
 // soft grey submit button.
-export const authInputClassName =
-  "border-foreground/20 bg-card text-base md:text-base";
-export const authSubmitClassName =
-  "w-full border-border bg-[color-mix(in_oklab,var(--card),var(--foreground)_8%)] font-semibold hover:bg-[color-mix(in_oklab,var(--card),var(--foreground)_12%)]";
+export const authInputClassName = "text-base md:text-base";
+export const authSubmitClassName = "w-full";
 
 export function useAuthPageState(redirect: string | undefined) {
   const redirectTo = getCurrentAuthRedirect(redirect);

@@ -1,13 +1,17 @@
-import { cn } from "cn";
+import { cn } from "@/client/boardui/utils/cx";
 
-// bg-muted is the page background in the light theme, so a muted skeleton
-// would not show outside a card. A foreground tint shows on both surfaces.
+// BoardUI Skeleton (https://www.boardui.com/components/skeleton): a text-tinted
+// block with the layered light sheen from boardui/styles/globals.css
+// (.bui-skeleton). The tint shows on both page and card surfaces.
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="skeleton"
       aria-hidden
-      className={cn("animate-pulse rounded-md bg-foreground/10", className)}
+      className={cn(
+        "bui-skeleton relative rounded-md bg-text-primary/8",
+        className,
+      )}
       {...props}
     />
   );

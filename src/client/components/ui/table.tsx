@@ -1,8 +1,9 @@
 import * as React from "react";
-import { cn } from "cn";
+import { cn } from "@/client/boardui/utils/cx";
 
-// Row hover and selection use a foreground and primary tint: bg-muted is the
-// page background in the light theme, so it would not show on a card.
+// BoardUI Table (https://www.boardui.com/components/table): tinted header band
+// with hairline borders, tertiary header text, separators between rows only.
+// Row hover uses the dropdown hover surface; selection an accent tint.
 // Cells wrap, because tables hold long URLs and titles.
 
 /** The card around a table and its toolbar or footer. The table runs edge to edge. */
@@ -11,7 +12,7 @@ function TableCard({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="table-card"
       className={cn(
-        "overflow-hidden rounded-xl border border-border bg-card",
+        "overflow-hidden rounded-2xl border border-border-button-default bg-card shadow-card",
         className,
       )}
       {...props}
@@ -31,7 +32,10 @@ function Table({
     >
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn(
+          "w-full caption-bottom border-collapse text-body-medium text-text-primary",
+          className,
+        )}
         {...props}
       />
     </div>
@@ -43,7 +47,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
     <thead
       data-slot="table-header"
       className={cn(
-        "[&_tr]:border-b [&_tr]:border-border [&_tr]:hover:bg-transparent",
+        "[&_tr]:border-b [&_tr]:border-separator-border [&_tr]:hover:bg-transparent",
         className,
       )}
       {...props}
@@ -66,7 +70,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
     <tfoot
       data-slot="table-footer"
       className={cn(
-        "border-t border-border bg-muted/50 font-medium [&>tr]:last:border-b-0",
+        "border-t border-separator-border bg-background-secondary-default text-body-medium [&>tr]:last:border-b-0",
         className,
       )}
       {...props}
@@ -79,7 +83,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b border-border transition-colors hover:bg-foreground/[0.03] has-aria-expanded:bg-foreground/[0.03] data-[state=selected]:bg-primary/5",
+        "border-b border-separator-border transition-colors duration-150 hover:bg-background-primary-hover has-aria-expanded:bg-background-primary-hover data-[state=selected]:bg-accent-50 dark:data-[state=selected]:bg-accent-950/40",
         className,
       )}
       {...props}
@@ -92,7 +96,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-9 px-3 text-left align-middle text-xs font-medium whitespace-nowrap text-muted-foreground first:pl-4 last:pr-4 [&:has([role=checkbox])]:pr-0",
+        "h-10 bg-background-secondary-default px-3 py-2.5 text-start align-middle text-body-medium whitespace-nowrap text-text-tertiary first:ps-4 last:pe-4 [&:has([role=checkbox])]:pe-0",
         className,
       )}
       {...props}
@@ -105,7 +109,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "px-3 py-2 align-middle first:pl-4 last:pr-4 [&:has([role=checkbox])]:pr-0",
+        "px-3 py-2.5 align-middle first:ps-4 last:pe-4 [&:has([role=checkbox])]:pe-0",
         className,
       )}
       {...props}
@@ -120,7 +124,7 @@ function TableCaption({
   return (
     <caption
       data-slot="table-caption"
-      className={cn("mt-4 text-sm text-muted-foreground", className)}
+      className={cn("mt-4 text-body-regular text-text-secondary", className)}
       {...props}
     />
   );

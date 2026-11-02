@@ -1,18 +1,18 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "cn";
+import { cn } from "@/client/boardui/utils/cx";
 
 const emptyVariants = cva(
-  "group/empty flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-4 rounded-xl border-dashed p-6 text-center text-balance",
+  "group/empty flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-4 rounded-2xl border-dashed p-6 text-center text-balance",
   {
     variants: {
       variant: {
         plain: "",
-        dashed: "border border-dashed border-border",
-        card: "border border-solid border-border bg-card text-card-foreground shadow-sm",
+        dashed: "border border-dashed border-border-button-hover",
+        card: "border border-solid border-border-button-default bg-background-primary-default text-text-primary shadow-card",
       },
       size: {
         default: "",
-        sm: "gap-3 rounded-lg p-4",
+        sm: "gap-3 rounded-xl p-4",
         lg: "p-10",
       },
     },
@@ -55,7 +55,7 @@ const emptyMediaVariants = cva(
     variants: {
       variant: {
         default: "bg-transparent",
-        icon: "flex size-10 shrink-0 items-center justify-center rounded-lg bg-foreground/5 text-muted-foreground [&_svg:not([class*='size-'])]:size-5",
+        icon: "flex size-10 shrink-0 items-center justify-center rounded-full bg-background-tertiary-default text-foreground-icon-secondary [&_svg:not([class*='size-'])]:size-5",
       },
     },
     defaultVariants: {
@@ -83,7 +83,7 @@ function EmptyTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="empty-title"
-      className={cn("text-sm font-semibold tracking-tight", className)}
+      className={cn("text-headline-medium text-text-primary", className)}
       {...props}
     />
   );
@@ -97,7 +97,7 @@ function EmptyDescription({
     <div
       data-slot="empty-description"
       className={cn(
-        "text-sm/relaxed text-muted-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary",
+        "text-body-regular text-text-secondary [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-accent-600",
         className,
       )}
       {...props}
@@ -110,7 +110,7 @@ function EmptyContent({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="empty-content"
       className={cn(
-        "flex w-full max-w-sm min-w-0 flex-col items-center gap-2.5 text-sm text-balance",
+        "flex w-full max-w-sm min-w-0 flex-col items-center gap-2.5 text-body-regular text-balance",
         className,
       )}
       {...props}

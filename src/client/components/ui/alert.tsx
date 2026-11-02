@@ -1,23 +1,28 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "cn";
+import { cn } from "@/client/boardui/utils/cx";
 
+/**
+ * BoardUI Notification card look (https://www.boardui.com/components/notification):
+ * a rounded card with a tinted status icon and title/description stack.
+ */
 const alertVariants = cva(
-  "group/alert relative grid w-full gap-0.5 rounded-lg border border-border px-2.5 py-2 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
+  "group/alert relative grid w-full gap-0.5 rounded-notification-card border border-border-button-default bg-background-primary-default px-3 py-2.5 text-start text-body-regular text-text-primary shadow-card has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pe-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2.5 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-foreground-icon-secondary *:[svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-card text-card-foreground",
-        info: "border-info/30 bg-info/10 *:[svg]:text-info",
-        success: "border-success/30 bg-success/10 *:[svg]:text-success",
+        default: "",
+        info: "border-transparent bg-notification-information-background *:[svg]:text-notification-information-foreground",
+        success:
+          "border-transparent bg-notification-success-background *:[svg]:text-notification-success-foreground",
         warning:
-          "border-warning/40 bg-warning/15 *:[svg]:text-warning-foreground dark:*:[svg]:text-warning",
+          "border-transparent bg-status-yellow-background *:[svg]:text-status-yellow-text",
         destructive:
-          "border-destructive/30 bg-destructive/10 *:data-[slot=alert-title]:text-destructive *:[svg]:text-destructive",
+          "border-transparent bg-notification-error-background *:data-[slot=alert-title]:text-notification-error-foreground *:[svg]:text-notification-error-foreground",
       },
       /** A full-width strip with no side borders, for notices above the page content. */
       banner: {
-        true: "rounded-none border-x-0 border-t-0 px-4 py-3.5 md:px-6",
+        true: "rounded-none border-x-0 border-t-0 px-4 py-3.5 shadow-none md:px-6",
       },
     },
     defaultVariants: {
@@ -47,7 +52,7 @@ function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="alert-title"
       className={cn(
-        "font-medium group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground",
+        "text-body-medium text-text-primary group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-text-primary",
         className,
       )}
       {...props}
@@ -63,7 +68,7 @@ function AlertDescription({
     <div
       data-slot="alert-description"
       className={cn(
-        "text-sm text-balance text-muted-foreground md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
+        "text-body-regular text-balance text-text-secondary md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-text-primary [&_p:not(:last-child)]:mb-4",
         className,
       )}
       {...props}
