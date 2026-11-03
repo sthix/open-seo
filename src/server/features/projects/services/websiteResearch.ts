@@ -36,6 +36,12 @@ import { ProjectContextRepository } from "@/server/features/project-context/repo
 import { AiVisibilityRepository } from "@/server/features/ai-visibility/repositories/AiVisibilityRepository";
 
 const SEARCH_RETRIES = 3;
+// Time the competitor search may spend on retries. A failing DataForSEO
+// search can take about 20 seconds per attempt, so retrying all of them would
+// spend most of the research deadline and the whole setup would time out.
+// Once the budget is spent, the search counts as an outage and research goes
+// on without competitors.
+const SEARCH_RETRY_BUDGET_MS = 30_000;
 const OUTPUT_RETRIES = 2;
 
 // DataForSEO's own search backend failing (e.g. 40101), not a problem with our
@@ -222,6 +228,7 @@ export async function researchWebsite(
                       "The search budget is exhausted. Use the existing results.",
                     );
                   searched = true;
+                  const retryDeadline = Date.now() + SEARCH_RETRY_BUDGET_MS;
                   const results = await Promise.allSettled(
                     queries.map(async (keyword) => {
                       // Searches belong to the already-admitted research task; collect
@@ -248,7 +255,8 @@ export async function researchWebsite(
                           if (
                             attempt === SEARCH_RETRIES ||
                             !isSearchOutage(error) ||
-                            error.name === "DataForSEOTimeoutError"
+                            error.name === "DataForSEOTimeoutError" ||
+                            Date.now() >= retryDeadline
                           )
                             throw error;
                         }

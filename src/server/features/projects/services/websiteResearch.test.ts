@@ -223,6 +223,24 @@ describe("researchWebsite", () => {
     },
   );
 
+  it("stops retrying a slow search outage and skips competitors", async () => {
+    vi.useFakeTimers();
+    listCompetitors.mockResolvedValue([]);
+    // Each failing search takes 20 seconds, as DataForSEO's did in an outage.
+    search.mockImplementation(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20_000));
+      throw new AppError("UPSTREAM_UNAVAILABLE");
+    });
+
+    const research = researchWebsite("https://saved.com", project, customer);
+    await vi.runAllTimersAsync();
+    const result = await research;
+    vi.useRealTimers();
+
+    expect(search).toHaveBeenCalledTimes(2);
+    expect(result.competitors).toEqual([]);
+  });
+
   it("retries with fresh tool budgets when the model returns invalid JSON", async () => {
     listCompetitors.mockResolvedValue([]);
     const succeed = generateText.getMockImplementation()!;
