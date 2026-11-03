@@ -48,6 +48,13 @@ optionally, `OPENROUTER_MODEL` as described in the Docker guide. API usage is
 billed by the provider. Check the provider's data handling terms before sending
 customer information to a model.
 
+To keep these model calls in the EU, set `MISTRAL_API_KEY` instead. SAM, prompt
+research and website research then use Mistral's API, which Mistral hosts in
+the EU, and no OpenRouter key is needed. If both keys are set, Mistral is used.
+The model defaults to `mistral-medium-latest`; override it with
+`MISTRAL_MODEL`. Mistral bills this usage directly. This setting has no effect
+on the hosted service.
+
 ## AI visibility with your own API keys
 
 Prompt Tracking normally collects answers through DataForSEO. A self-hosted

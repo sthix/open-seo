@@ -121,6 +121,11 @@ declare namespace Cloudflare {
     OPENROUTER_API_KEY?: string;
     // Optional OpenRouter model slug override (defaults in openrouter.ts).
     OPENROUTER_MODEL?: string;
+    // Self-hosted only: Mistral's EU-hosted API instead of OpenRouter for SAM
+    // and AI research. Takes precedence over OPENROUTER_API_KEY.
+    MISTRAL_API_KEY?: string;
+    // Optional Mistral model override (defaults in openrouter.ts).
+    MISTRAL_MODEL?: string;
     // Days to keep AI visibility answer text (default 90). Sources and brand
     // results stay until the run is deleted after 13 months.
     AI_ANSWER_RETENTION_DAYS?: string;
