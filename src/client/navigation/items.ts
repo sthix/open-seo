@@ -8,6 +8,7 @@ import {
   Globe,
   LayoutDashboard,
   Link2,
+  ListTodo,
   MessageSquare,
   Search,
   TrendingUp,
@@ -74,6 +75,11 @@ const projectNavItems = [
     to: "/p/$projectId/prompt-explorer" as const,
     label: "Prompt Explorer",
     icon: MessageSquare,
+  },
+  {
+    to: "/p/$projectId/tasks" as const,
+    label: "Tasks",
+    icon: ListTodo,
   },
   {
     to: "/p/$projectId/reports" as const,
@@ -178,6 +184,7 @@ function getAllProjectNavGroups(projectId: string) {
     {
       label: "AI Tools",
       items: [
+        byPath("/p/$projectId/tasks"),
         byPath("/p/$projectId/reports"),
         byPath("/p/$projectId/context"),
         aiNavItem,

@@ -279,6 +279,16 @@ export default {
         );
         console.log("[mcp-oauth] purged expired OAuth data", result);
       }
+      if (!isHostedAuthMode(authMode)) {
+        // Self-hosted agencies: propose tomorrow's agent tasks.
+        try {
+          const { AgentTaskService } =
+            await import("@/server/features/agent-tasks/AgentTaskService");
+          await withPgClient(() => AgentTaskService.findTasksForAllProjects());
+        } catch (err) {
+          console.error("[cron] Finding agent tasks failed:", err);
+        }
+      }
       if (isHostedAuthMode(authMode)) {
         // Daily referral-sale sweep: catches paid Autumn invoices the
         // billing.updated webhook path misses (renewals, one-time top-ups).

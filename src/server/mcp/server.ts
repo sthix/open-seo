@@ -64,6 +64,11 @@ import {
 } from "@/server/mcp/tools/google-connection-tools";
 import { listProjectsTool } from "@/server/mcp/tools/list-projects";
 import {
+  claimAgentTaskTool,
+  completeAgentTaskTool,
+  listAgentTasksTool,
+} from "@/server/mcp/tools/agent-tasks";
+import {
   researchProjectWebsiteTool,
   saveProjectWebsiteSetupTool,
 } from "@/server/mcp/tools/project-website";
@@ -252,6 +257,9 @@ export function registerOpenSeoTools(
   register(saveProjectWebsiteSetupTool);
   register(getProjectContextTool);
   register(updateProjectContextTool);
+  register(listAgentTasksTool);
+  register(claimAgentTaskTool);
+  register(completeAgentTaskTool);
   register(listSavedKeywordsTool);
   register(removeSavedKeywordsTool);
   register(researchKeywordsTool);
