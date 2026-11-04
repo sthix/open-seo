@@ -92,6 +92,12 @@ export function AgentTasksPage({ projectId }: { projectId: string }) {
   const visible = (tasks.data ?? []).filter(
     (task) => task.status !== "dismissed",
   );
+  const sendable = visible.filter((task) => SENDABLE.has(task.status));
+  const allSelected =
+    sendable.length > 0 && sendable.every((task) => selected.has(task.id));
+  const someSelected = !allSelected && selected.size > 0;
+  const toggleAll = (on: boolean) =>
+    setSelected(on ? new Set(sendable.map((task) => task.id)) : new Set());
   const toggle = (id: string, on: boolean) =>
     setSelected((current) => {
       const next = new Set(current);
@@ -139,6 +145,20 @@ export function AgentTasksPage({ projectId }: { projectId: string }) {
         </p>
       ) : (
         <ul className="divide-y divide-border-primary rounded-xl border border-border-primary">
+          <li className="flex items-center gap-3 p-3">
+            <Checkbox
+              checked={allSelected}
+              indeterminate={someSelected}
+              disabled={!sendable.length}
+              onCheckedChange={(value) => toggleAll(Boolean(value))}
+              aria-label="Select all tasks"
+            />
+            <span className="text-body-medium text-text-secondary">
+              {selected.size
+                ? `${selected.size} of ${sendable.length} selected`
+                : `Select all ${sendable.length} tasks`}
+            </span>
+          </li>
           {visible.map((task) => (
             <TaskRow
               key={task.id}
