@@ -223,6 +223,24 @@ describe("researchWebsite", () => {
     },
   );
 
+  it("stops retrying a slow search outage and skips competitors", async () => {
+    vi.useFakeTimers();
+    listCompetitors.mockResolvedValue([]);
+    // Each failing search takes 20 seconds, as DataForSEO's did in an outage.
+    search.mockImplementation(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20_000));
+      throw new AppError("UPSTREAM_UNAVAILABLE");
+    });
+
+    const research = researchWebsite("https://saved.com", project, customer);
+    await vi.runAllTimersAsync();
+    const result = await research;
+    vi.useRealTimers();
+
+    expect(search).toHaveBeenCalledTimes(2);
+    expect(result.competitors).toEqual([]);
+  });
+
   it("retries with fresh tool budgets when the model returns invalid JSON", async () => {
     listCompetitors.mockResolvedValue([]);
     const succeed = generateText.getMockImplementation()!;
@@ -251,19 +269,45 @@ describe("researchWebsite", () => {
       })
       .mockResolvedValueOnce({ output: { competitors: [] } });
 
-    await expect(
-      researchWebsite("https://saved.com", project, customer),
-    ).rejects.toThrow("Website research was incomplete");
+    const result = await researchWebsite(
+      "https://saved.com",
+      project,
+      customer,
+    );
+
+    // The unsearched retry isn't accepted, so research ends without competitors.
+    expect(result.competitors).toEqual([]);
+    expect(result.preserveCompetitors).toBe(false);
   });
 
-  it("fails instead of skipping competitors when search fails for a non-outage reason", async () => {
+  it("finishes without competitors when competitor research fails", async () => {
     listCompetitors.mockResolvedValue([]);
+    listKeywords.mockResolvedValue([]);
     search.mockRejectedValue(new AppError("DATAFORSEO_AUTH_FAILED"));
 
-    await expect(
-      researchWebsite("https://saved.com", project, customer),
-    ).rejects.toThrow("Website research was incomplete");
+    const result = await researchWebsite(
+      "https://saved.com",
+      project,
+      customer,
+    );
+
     expect(search).toHaveBeenCalledOnce();
+    expect(result.competitors).toEqual([]);
+    expect(result.suggestedTopics).toEqual(topics);
+  });
+
+  it("drops a competitor whose source page was not read", async () => {
+    listCompetitors.mockResolvedValue([]);
+    readSite.mockResolvedValue({ pages: [{ url: "https://other.com/" }] });
+
+    const result = await researchWebsite(
+      "https://saved.com",
+      project,
+      customer,
+    );
+
+    expect(generateText).toHaveBeenCalledOnce();
+    expect(result.competitors).toEqual([]);
   });
 
   it("bills Context reads of a site that stays unreadable", async () => {

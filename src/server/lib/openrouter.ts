@@ -1,3 +1,4 @@
+import { createMistral } from "@ai-sdk/mistral";
 import { ConfigurationError, createGatewayFetch } from "@every-app/sdk/server";
 import {
   createOpenRouter,
@@ -5,7 +6,7 @@ import {
   type OpenRouterProvider,
 } from "@openrouter/ai-sdk-provider";
 import { wrapLanguageModel } from "ai";
-import { isEveryAppAuthMode } from "@/lib/auth-mode";
+import { getAuthMode, isEveryAppAuthMode } from "@/lib/auth-mode";
 import { gatewayCallFor } from "@/server/lib/gateway-attribution";
 import { getEnvValueSync, getWorkersEnv } from "@/server/lib/runtime-env";
 
@@ -13,11 +14,13 @@ import { getEnvValueSync, getWorkersEnv } from "@/server/lib/runtime-env";
  * How a deployment reaches OpenRouter: with its own key, or behind an Every
  * App gateway (AUTH_MODE=everyapp) through the gateway's AI proxy, which
  * holds the key. The proxy's host is a placeholder the binding never
- * resolves.
+ * resolves. A self-hosted install can use Mistral's EU-hosted API instead of
+ * OpenRouter (MISTRAL_API_KEY).
  */
 export type OpenRouterAccess =
   | { apiKey: string }
-  | { gatewayFetch: typeof fetch };
+  | { gatewayFetch: typeof fetch }
+  | { mistralApiKey: string; model: string | undefined };
 
 const GATEWAY_BASE_URL =
   "https://every-app-gateway.invalid/api/ai/openrouter/api/v1";
@@ -49,6 +52,15 @@ export function getOpenRouterAccess(env: object): OpenRouterAccess | null {
       throw error;
     }
   }
+  // Hosted keeps OpenRouter: its usage credits are metered from the real
+  // cost OpenRouter reports, which Mistral's API doesn't return.
+  const mistralApiKey = getEnvValueSync(env, "MISTRAL_API_KEY");
+  if (
+    mistralApiKey &&
+    getAuthMode(getEnvValueSync(env, "AUTH_MODE")) !== "hosted"
+  ) {
+    return { mistralApiKey, model: getEnvValueSync(env, "MISTRAL_MODEL") };
+  }
   const apiKey = getEnvValueSync(env, "OPENROUTER_API_KEY");
   return apiKey ? { apiKey } : null;
 }
@@ -60,7 +72,9 @@ export function buildSamChatModel(
 ): LanguageModelV3 {
   const access = getOpenRouterAccess(env);
   if (!access) {
-    throw new Error("OPENROUTER_API_KEY is required for the SAM agent");
+    throw new Error(
+      "OPENROUTER_API_KEY or MISTRAL_API_KEY is required for the SAM agent",
+    );
   }
   return buildChatAgentModel(
     access,
@@ -74,7 +88,7 @@ export async function requireOpenRouterAccess(): Promise<OpenRouterAccess> {
   const access = getOpenRouterAccess((await getWorkersEnv()) ?? {});
   if (!access) {
     throw new Error(
-      "Missing required environment variable: OPENROUTER_API_KEY",
+      "Missing required environment variable: OPENROUTER_API_KEY or MISTRAL_API_KEY",
     );
   }
   return access;
@@ -88,6 +102,10 @@ const DEFAULT_CHAT_AGENT_MODEL = "openai/gpt-5.6-luna";
 // fallback where OpenAI is blocked. Its routing needs the ZDR/provider tuning
 // below.
 const MINIMAX_M3 = "minimax/minimax-m3";
+
+// Mistral model used instead of OpenRouter when MISTRAL_API_KEY is set.
+// Override with MISTRAL_MODEL.
+const DEFAULT_MISTRAL_MODEL = "mistral-medium-latest";
 
 // OpenRouter rejects OpenAI models for requests from these countries ("This
 // model is not available in your region"). Workflows and Durable Objects run
@@ -139,6 +157,7 @@ export function buildChatAgentModel(
   modelId?: string,
   reasoningEffort: "max" | "low" = "max",
 ): LanguageModelV3 {
+  if ("mistralApiKey" in access) return mistralModel(access);
   const model = modelId ?? DEFAULT_CHAT_AGENT_MODEL;
   const openrouter =
     "apiKey" in access
@@ -192,5 +211,37 @@ function openRouterModel(
   return openrouter(model, {
     usage: { include: true },
     extraBody: { reasoning: { effort: reasoningEffort } },
+  });
+}
+
+/**
+ * Mistral's API, for self-hosted installs that keep model calls in the EU.
+ * OPENROUTER_MODEL and the reasoning effort don't apply here. Research
+ * services read each step's cost from OpenRouter's usage field and throw
+ * without it; self-hosted runs meter nothing (billResearchSpend returns
+ * early), so the field is reported as zero.
+ */
+function mistralModel(access: {
+  mistralApiKey: string;
+  model: string | undefined;
+}): LanguageModelV3 {
+  const model = createMistral({ apiKey: access.mistralApiKey })(
+    access.model ?? DEFAULT_MISTRAL_MODEL,
+  );
+  return wrapLanguageModel({
+    model,
+    middleware: {
+      specificationVersion: "v3",
+      wrapGenerate: async ({ doGenerate }) => {
+        const result = await doGenerate();
+        return {
+          ...result,
+          providerMetadata: {
+            ...result.providerMetadata,
+            openrouter: { usage: { cost: 0 } },
+          },
+        };
+      },
+    },
   });
 }

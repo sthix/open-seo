@@ -36,6 +36,12 @@ import { ProjectContextRepository } from "@/server/features/project-context/repo
 import { AiVisibilityRepository } from "@/server/features/ai-visibility/repositories/AiVisibilityRepository";
 
 const SEARCH_RETRIES = 3;
+// Time the competitor search may spend on retries. A failing DataForSEO
+// search can take about 20 seconds per attempt, so retrying all of them would
+// spend most of the research deadline and the whole setup would time out.
+// Once the budget is spent, the search counts as an outage and research goes
+// on without competitors.
+const SEARCH_RETRY_BUDGET_MS = 30_000;
 const OUTPUT_RETRIES = 2;
 
 // DataForSEO's own search backend failing (e.g. 40101), not a problem with our
@@ -48,8 +54,9 @@ function isSearchOutage(error: unknown): error is AppError {
 // covers every attempt so retries stay inside the research-setup step.
 async function retryInvalidOutput<T>(
   generate: (abortSignal: AbortSignal) => Promise<T>,
+  deadlineMs: number,
 ) {
-  const abortSignal = AbortSignal.timeout(120_000);
+  const abortSignal = AbortSignal.timeout(deadlineMs);
   for (let attempt = 0; ; attempt++) {
     try {
       return await generate(abortSignal);
@@ -71,12 +78,41 @@ type ResearchedProject = {
   languageCode: string;
 };
 
-/** Internal research for callers that have already checked admission credits. */
-// oxlint-disable-next-line max-lines-per-function -- the tools share per-attempt research state
+/**
+ * Internal research for callers that have already checked admission credits.
+ *
+ * Competitor research is the fragile part: it depends on DataForSEO's live
+ * search and on reading other businesses' websites. If research that includes
+ * competitors fails for any reason other than an unreadable website, it runs
+ * once more without them, so setup still gets an overview, topics and
+ * prompts, and the user adds competitors on the Context page. The first try
+ * gets a shorter deadline so both fit in the research-setup step.
+ */
 export async function researchWebsite(
   website: string,
   project: ResearchedProject,
   customer: BillingCustomerContext,
+) {
+  const attempt = (competitors: boolean, deadlineMs: number) =>
+    researchWebsiteAttempt(website, project, customer, competitors, deadlineMs);
+  try {
+    return await attempt(true, 100_000);
+  } catch (error) {
+    // An unreadable website fails the same way without competitors.
+    if (error instanceof AppError && error.code === "VALIDATION_ERROR")
+      throw error;
+    console.error("website-research.competitors-skipped", project.id, error);
+    return attempt(false, 120_000);
+  }
+}
+
+// oxlint-disable-next-line max-lines-per-function -- the tools share per-attempt research state
+async function researchWebsiteAttempt(
+  website: string,
+  project: ResearchedProject,
+  customer: BillingCustomerContext,
+  researchCompetitors: boolean,
+  deadlineMs: number,
 ) {
   const domain =
     project.domain ??
@@ -96,14 +132,14 @@ export async function researchWebsite(
     (section) => section.key === "business_overview",
   )?.content;
   const missingOverview = overview === undefined;
-  const missingCompetitors = !competitors.length;
+  const missingCompetitors = researchCompetitors && !competitors.length;
   const missingTopics = !keywords.length;
   const preserved = {
     name: project.name,
     domain,
     overview,
     competitors: [],
-    preserveCompetitors: !missingCompetitors,
+    preserveCompetitors: competitors.length > 0,
     suggestedTopics: [],
     suggestedKeywords: [],
   };
@@ -222,6 +258,7 @@ export async function researchWebsite(
                       "The search budget is exhausted. Use the existing results.",
                     );
                   searched = true;
+                  const retryDeadline = Date.now() + SEARCH_RETRY_BUDGET_MS;
                   const results = await Promise.allSettled(
                     queries.map(async (keyword) => {
                       // Searches belong to the already-admitted research task; collect
@@ -248,7 +285,8 @@ export async function researchWebsite(
                           if (
                             attempt === SEARCH_RETRIES ||
                             !isSearchOutage(error) ||
-                            error.name === "DataForSEOTimeoutError"
+                            error.name === "DataForSEOTimeoutError" ||
+                            Date.now() >= retryDeadline
                           )
                             throw error;
                         }
@@ -337,7 +375,7 @@ export async function researchWebsite(
           });
         },
       });
-    });
+    }, deadlineMs);
     const output = outputSchema.parse(result.output);
     const suggestedKeywords = z
       .array(z.string())
@@ -376,23 +414,19 @@ export async function researchWebsite(
         "INTERNAL_ERROR",
         "Website research was incomplete. Please try again.",
       );
-    for (const competitor of research.competitors) {
-      competitor.domain = normalizeBacklinksTarget(competitor.domain, {
-        scope: "domain",
-      }).apiTarget;
-      const sourceDomain = normalizeBacklinksTarget(competitor.sourceUrl, {
-        scope: "domain",
-      }).apiTarget;
-      if (
-        !sources.has(competitor.sourceUrl) ||
-        sourceDomain !== competitor.domain ||
-        competitor.domain === domain
-      )
-        throw new AppError(
-          "INTERNAL_ERROR",
-          "A competitor could not be verified. Please try again.",
-        );
-    }
+    // A competitor whose source page wasn't actually read is dropped, not
+    // fatal: the rest of the research is still good, and the user can add
+    // missing competitors on the Context page.
+    const domainOf = (url: string) =>
+      normalizeBacklinksTarget(url, { scope: "domain" }).apiTarget;
+    research.competitors = research.competitors.filter((competitor) => {
+      competitor.domain = domainOf(competitor.domain);
+      return (
+        sources.has(competitor.sourceUrl) &&
+        domainOf(competitor.sourceUrl) === competitor.domain &&
+        competitor.domain !== domain
+      );
+    });
     return research;
   } finally {
     if (contextUsage.contextCredits > 0)

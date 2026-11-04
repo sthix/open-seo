@@ -72,6 +72,10 @@ function KeyGate({
               </Link>{" "}
               has the steps for each deployment.
             </p>
+            <p>
+              To keep these calls in the EU, set <code>MISTRAL_API_KEY</code>{" "}
+              instead and restart OpenSEO.
+            </p>
           </>
         }
         actions={
