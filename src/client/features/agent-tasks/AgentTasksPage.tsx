@@ -37,13 +37,15 @@ const STATUS: Record<
   proposed: { label: "Proposed", variant: "secondary" },
   queued: { label: "Waiting for Claude Code", variant: "soft" },
   claimed: { label: "Claude Code is working", variant: "info" },
-  pr_opened: { label: "PR open", variant: "success" },
+  pr_opened: { label: "PR open", variant: "info" },
+  merged: { label: "Merged", variant: "success" },
+  pr_closed: { label: "PR closed", variant: "secondary" },
   no_change: { label: "No change", variant: "warning" },
   failed: { label: "Failed", variant: "destructive" },
 };
 
 // Tasks a person can send (again) to Claude Code.
-const SENDABLE = new Set(["proposed", "no_change", "failed"]);
+const SENDABLE = new Set(["proposed", "no_change", "failed", "pr_closed"]);
 
 export function AgentTasksPage({ projectId }: { projectId: string }) {
   const client = useQueryClient();

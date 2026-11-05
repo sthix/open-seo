@@ -32,7 +32,8 @@ export const agentTasks = sqliteTable(
     brief: text("brief").notNull(),
     targetUrl: text("target_url"),
     score: integer("score").notNull().default(0),
-    // proposed | queued | claimed | pr_opened | no_change | failed | dismissed
+    // proposed | queued | claimed | pr_opened | merged | pr_closed | no_change
+    // | failed | dismissed
     status: text("status").notNull().default("proposed"),
     prUrl: text("pr_url"),
     note: text("note"),

@@ -19,9 +19,11 @@ const tasksPath = (projectId: string) => `/p/${projectId}/tasks`;
 const listInputSchema = {
   projectId: projectIdSchema,
   status: z
-    .enum(["queued"])
+    .enum(["queued", "pr_opened"])
     .default("queued")
-    .describe("Only queued tasks are listed: the ones a person approved."),
+    .describe(
+      "queued: the tasks a person approved, to work on. pr_opened: tasks whose pull request is waiting for review, to check whether it was merged or closed.",
+    ),
 } as const;
 
 export const listAgentTasksTool = {
@@ -172,6 +174,63 @@ export const completeAgentTaskTool = {
           tasksPath(args.projectId),
         ),
         structuredContent: { task: toAgentTaskView(task) },
+      });
+    },
+  ),
+};
+
+const prStateInputSchema = {
+  ...taskInputSchema,
+  state: z
+    .enum(["merged", "closed"])
+    .describe(
+      "merged: a person merged the task's pull request. closed: it was closed without merging; the person can send the task again.",
+    ),
+} as const;
+
+export const setAgentTaskPrStateTool = {
+  name: "set_agent_task_pr_state",
+  config: {
+    title: "Record an agent task's PR result",
+    description:
+      "Records that a pr_opened task's pull request was merged or closed without merging, so the Tasks page shows it. Returns updated: false if the task isn't pr_opened. Uses no credits.",
+    inputSchema: prStateInputSchema,
+    outputSchema: z
+      .object({
+        updated: z.boolean(),
+        task: looseObjectOutputSchema.nullable(),
+        ...optionalMetaOutputSchema,
+      })
+      .passthrough(),
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+    },
+  },
+  handler: withMcpProjectAuth(
+    async (args: z.infer<z.ZodObject<typeof prStateInputSchema>>, context) => {
+      const updated = await AgentTaskRepository.setPrState(
+        args.projectId,
+        args.taskId,
+        args.state === "merged" ? "merged" : "pr_closed",
+      );
+      const task =
+        updated ?? (await AgentTaskRepository.get(args.projectId, args.taskId));
+      return mcpResponse({
+        text: updated
+          ? `${updated.title}: ${updated.status}`
+          : "Not updated: the task is not pr_opened.",
+        meta: buildProjectMeta(
+          context,
+          args.projectId,
+          tasksPath(args.projectId),
+        ),
+        structuredContent: {
+          updated: Boolean(updated),
+          task: task ? toAgentTaskView(task) : null,
+        },
       });
     },
   ),

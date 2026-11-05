@@ -22,7 +22,7 @@ export type ProposedAgentTask = {
 };
 
 // Statuses a person can (re)send to the runner.
-const QUEUEABLE = ["proposed", "no_change", "failed"];
+const QUEUEABLE = ["proposed", "no_change", "failed", "pr_closed"];
 // A runner that died mid-task leaves it claimed; after this long another
 // runner may take it again.
 const STALE_CLAIM_MS = 60 * 60 * 1000;
@@ -203,6 +203,29 @@ async function complete(
   return row ?? null;
 }
 
+/**
+ * Records what happened to a task's pull request after a person reviewed it:
+ * merged, or closed without merging. Only moves a task out of pr_opened.
+ */
+async function setPrState(
+  projectId: string,
+  taskId: string,
+  state: "merged" | "pr_closed",
+): Promise<AgentTask | null> {
+  const [row] = await db
+    .update(agentTasks)
+    .set({ status: state, updatedAt: now() })
+    .where(
+      and(
+        eq(agentTasks.projectId, projectId),
+        eq(agentTasks.id, taskId),
+        eq(agentTasks.status, "pr_opened"),
+      ),
+    )
+    .returning();
+  return row ?? null;
+}
+
 async function get(projectId: string, taskId: string) {
   const [row] = await db
     .select()
@@ -218,6 +241,7 @@ export const AgentTaskRepository = {
   saveProposed,
   queue,
   dismiss,
+  setPrState,
   claim,
   complete,
   get,
