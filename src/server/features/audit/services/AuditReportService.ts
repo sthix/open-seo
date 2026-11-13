@@ -132,6 +132,7 @@ async function optional<T>(load: () => Promise<T>): Promise<T | null> {
 async function getReportContext(
   auditId: string,
   customer: BillingCustomerContext & { projectId: string },
+  options: { includeBacklinks: boolean },
 ) {
   const { projectId } = customer;
   const audit = await AuditRepository.getAuditForProject(auditId, projectId);
@@ -152,7 +153,9 @@ async function getReportContext(
     optional(() => loadStartPageCheck(audit.startUrl)),
     // Billed like the Backlinks page, and cached for hours, so exporting the
     // report again soon after does not pay for the same lookups twice.
-    optional(() => loadReportBacklinks(audit.startUrl, customer)),
+    options.includeBacklinks
+      ? optional(() => loadReportBacklinks(audit.startUrl, customer))
+      : null,
   ]);
   return {
     previous,

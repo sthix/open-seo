@@ -26,6 +26,11 @@ export const getAuditStatusSchema = z.object({
   auditId: z.string().min(1),
 });
 
+export const getAuditReportContextSchema = getAuditStatusSchema.extend({
+  /** Backlink lookups cost credits, so the report can leave them out. */
+  includeBacklinks: z.boolean().default(true),
+});
+
 export const getAuditResultsSchema = z.object({
   projectId: z.string().min(1),
   auditId: z.string().min(1),
