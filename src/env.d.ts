@@ -160,6 +160,8 @@ interface ImportMetaEnv {
   readonly VITE_E2E_DOMAIN_FIXTURES?: string;
   readonly VITE_E2E_KEYWORD_FIXTURES?: string;
   readonly VITE_OPENSEO_LEGACY_DOCKER?: string;
+  /** Link to an agency dashboard, shown in the sidebar footer when set. */
+  readonly VITE_AGENCY_DASHBOARD_URL?: string;
 }
 
 interface ImportMeta {

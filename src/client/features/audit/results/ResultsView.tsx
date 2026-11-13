@@ -23,6 +23,7 @@ import {
   SeverityBadge,
 } from "@/client/features/audit/shared";
 import { ExportMenu } from "@/client/components/ExportMenu";
+import { AuditReportMenu } from "@/client/features/audit/report/AuditReportMenu";
 import {
   Alert,
   AlertDescription,
@@ -71,6 +72,7 @@ export function ResultsView({
 
   const tabs = (
     <ResultsHeader
+      data={data}
       issueCount={issues.length}
       pageCount={pages.length}
       lighthouseCount={lighthouse.length}
@@ -221,6 +223,7 @@ function useResultStats(
 }
 
 function ResultsHeader({
+  data,
   issueCount,
   pageCount,
   lighthouseCount,
@@ -229,6 +232,7 @@ function ResultsHeader({
   onTabChange,
   onExport,
 }: {
+  data: AuditResultsData;
   issueCount: number;
   pageCount: number;
   lighthouseCount: number;
@@ -258,7 +262,10 @@ function ResultsHeader({
         if (next) onTabChange(next.tab);
       }}
       actions={
-        <ExportMenu actions={["sheets", "csv", "json"]} onExport={onExport} />
+        <div className="flex flex-wrap items-center gap-2">
+          <AuditReportMenu data={data} />
+          <ExportMenu actions={["sheets", "csv", "json"]} onExport={onExport} />
+        </div>
       }
     >
       {tabs.map(({ label, tab }) => (
