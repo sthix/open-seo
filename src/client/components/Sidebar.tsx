@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   CircleHelp,
   CreditCard,
+  Gauge,
   LogOut,
   Plus,
   Settings,
@@ -229,6 +230,9 @@ export function Sidebar({
 // holds help and OpenSEO settings.
 const everyApp = isEveryAppClientAuthMode();
 
+// An agency running OpenSEO next to its own dashboard links to it from here.
+const agencyDashboardUrl = import.meta.env.VITE_AGENCY_DASHBOARD_URL;
+
 /**
  * The way back up, first in the sidebar as in every Every App app. The row
  * keeps its height while the gateway's URL loads so the header doesn't jump.
@@ -297,6 +301,17 @@ function AccountFooter({ ready }: { ready: boolean }) {
   return (
     <UiSidebarFooter className="gap-0 pb-safe">
       <SidebarMenu>
+        {agencyDashboardUrl ? (
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              render={<a href={agencyDashboardUrl} />}
+              className={navButtonClass}
+            >
+              <Gauge className="size-[18px]" />
+              <span>Cited dashboard</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ) : null}
         <SidebarNavLink
           icon={CircleHelp}
           label="Help & Community"
