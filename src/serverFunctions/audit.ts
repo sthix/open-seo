@@ -11,6 +11,7 @@ import {
   deleteAuditSchema,
   getAuditHistorySchema,
   getAuditResultsSchema,
+  getAuditReportContextSchema,
   getAuditStatusSchema,
   getCrawlProgressSchema,
   startAuditSchema,
@@ -75,9 +76,11 @@ export const getAuditResults = createServerFn({ method: "POST" })
  */
 export const getAuditReportContext = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
-  .validator(getAuditStatusSchema)
+  .validator(getAuditReportContextSchema)
   .handler(async ({ data, context }) => {
-    return AuditReportService.getReportContext(data.auditId, context);
+    return AuditReportService.getReportContext(data.auditId, context, {
+      includeBacklinks: data.includeBacklinks,
+    });
   });
 
 export const getAuditHistory = createServerFn({ method: "POST" })
