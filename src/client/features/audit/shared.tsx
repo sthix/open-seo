@@ -32,7 +32,7 @@ export function extractHostname(url: string): string {
 
 // SQLite's current_timestamp default is UTC but has no timezone marker; treat
 // it as UTC rather than letting the browser parse it as local time.
-function parseTimestamp(dateStr: string): Date {
+export function parseTimestamp(dateStr: string): Date {
   return new Date(
     /^\d{4}-\d{2}-\d{2} /.test(dateStr)
       ? `${dateStr.replace(" ", "T")}Z`

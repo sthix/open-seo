@@ -46,7 +46,7 @@ export function resolveIssueSeverity(issue: {
     : "info";
 }
 
-function groupIssues(issues: AuditIssueRow[]): IssueGroup[] {
+export function groupIssues(issues: AuditIssueRow[]): IssueGroup[] {
   const groups = new Map<string, IssueGroup>();
   for (const issue of issues) {
     let group = groups.get(issue.issueType);
