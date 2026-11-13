@@ -59,10 +59,20 @@ export function CoverStat({
   );
 }
 
-export function Tile({ value, label }: { value: string; label: string }) {
+export function Tile({
+  value,
+  label,
+  color,
+}: {
+  value: string;
+  label: string;
+  color?: string;
+}) {
   return (
     <div className="tile">
-      <div className="tile-value">{value}</div>
+      <div className="tile-value" style={color ? { color } : undefined}>
+        {value}
+      </div>
       <div className="label">{label}</div>
     </div>
   );

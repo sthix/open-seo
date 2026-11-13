@@ -12,7 +12,13 @@ import { exportAuditReport } from "@/client/features/audit/report/exportAuditRep
 import type { AuditResultsData } from "@/client/features/audit/results/types";
 
 /** The "PDF report" button: the whole audit as a report, in English or German. */
-export function AuditReportMenu({ data }: { data: AuditResultsData }) {
+export function AuditReportMenu({
+  projectId,
+  data,
+}: {
+  projectId: string;
+  data: AuditResultsData;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
@@ -23,10 +29,18 @@ export function AuditReportMenu({ data }: { data: AuditResultsData }) {
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Report language</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => void exportAuditReport(data, "en")}>
+          <DropdownMenuItem
+            onClick={() =>
+              void exportAuditReport({ projectId, data, language: "en" })
+            }
+          >
             English
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => void exportAuditReport(data, "de")}>
+          <DropdownMenuItem
+            onClick={() =>
+              void exportAuditReport({ projectId, data, language: "de" })
+            }
+          >
             Deutsch
           </DropdownMenuItem>
         </DropdownMenuGroup>

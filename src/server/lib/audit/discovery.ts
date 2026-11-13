@@ -68,6 +68,31 @@ async function fetchRobotsTxtText(
   }
 }
 
+/**
+ * A small text file at a site's root (robots.txt, llms.txt), read outside a
+ * crawl. `found: false` is a plain 4xx, which for robots.txt means "everything
+ * allowed"; null means the answer is unknown: unreachable, a server error, or
+ * a refusal that may be bot protection rather than the site's real answer.
+ */
+export async function fetchSiteTextFile(
+  url: string,
+): Promise<{ found: true; text: string } | { found: false } | null> {
+  try {
+    const fetched = await fetchFollowingRedirects(url, 10_000, null);
+    if (!fetched) return null;
+    const { status, ok } = fetched.response;
+    if (ok) {
+      const text = await fetched.response.text();
+      return { found: true, text: text.slice(0, MAX_ROBOTS_TXT_BYTES) };
+    }
+    await fetched.response.body?.cancel();
+    const refused = status === 401 || status === 403 || status === 429;
+    return status >= 400 && status < 500 && !refused ? { found: false } : null;
+  } catch {
+    return null;
+  }
+}
+
 const MAX_DISCOVERY_REDIRECT_HOPS = 5;
 
 /**

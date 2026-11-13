@@ -3,6 +3,7 @@ import { CrawlerCredentialService } from "@/server/features/audit/services/Crawl
 import { createServerFn } from "@tanstack/react-start";
 import { waitUntil } from "cloudflare:workers";
 import { requireOrgPermission } from "@/server/auth/org-gate";
+import { AuditReportService } from "@/server/features/audit/services/AuditReportService";
 import { AuditService } from "@/server/features/audit/services/AuditService";
 import { captureServerEvent } from "@/server/lib/posthog";
 import { requireProjectContext } from "@/serverFunctions/middleware";
@@ -66,6 +67,17 @@ export const getAuditResults = createServerFn({ method: "POST" })
   .validator(getAuditResultsSchema)
   .handler(async ({ data, context }) => {
     return AuditService.getResults(data.auditId, context.projectId);
+  });
+
+/**
+ * What the PDF report adds to the results: the previous audit, Search Console
+ * traffic per page, and the site's stance toward AI crawlers.
+ */
+export const getAuditReportContext = createServerFn({ method: "POST" })
+  .middleware(requireProjectContext)
+  .validator(getAuditStatusSchema)
+  .handler(async ({ data, context }) => {
+    return AuditReportService.getReportContext(data.auditId, context.projectId);
   });
 
 export const getAuditHistory = createServerFn({ method: "POST" })

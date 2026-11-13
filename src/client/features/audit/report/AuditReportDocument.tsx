@@ -1,14 +1,25 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { isLighthouseFailure } from "@/client/features/audit/results/AuditResultsTableFilterLogic";
-import { groupIssues } from "@/client/features/audit/results/IssuesView";
 import type { AuditResultsData } from "@/client/features/audit/results/types";
+import {
+  AiSection,
+  ProgressSection,
+} from "@/client/features/audit/report/AuditReportInsights";
 import {
   IssueSections,
   PagesSection,
   PerformanceSection,
-  type ReportFormat,
 } from "@/client/features/audit/report/AuditReportSections";
-import { ISSUE_TEXT_DE } from "@/client/features/audit/report/issueTextDe";
+import type { ReportFormat } from "@/client/features/audit/report/reportFormat";
+import {
+  buildReportGroups,
+  reportIssueTitle,
+} from "@/client/features/audit/report/reportGroups";
+import { INSIGHT_STRINGS } from "@/client/features/audit/report/reportInsightStrings";
+import {
+  buildTrafficLookup,
+  type AuditReportContext,
+} from "@/client/features/audit/report/reportInsights";
 import { reportCss } from "@/client/features/audit/report/reportCss";
 import {
   CoverStat,
@@ -30,16 +41,14 @@ import {
   parseTimestamp,
 } from "@/client/features/audit/shared";
 
-const germanIssueText: Partial<
-  Record<string, (typeof ISSUE_TEXT_DE)[keyof typeof ISSUE_TEXT_DE]>
-> = ISSUE_TEXT_DE;
-
 /**
  * The whole report as one self-contained HTML document, laid out for A4. The
  * caller opens it in a tab, where its own script calls print().
  */
 export function renderAuditReportHtml(args: {
   data: AuditResultsData;
+  /** The previous audit, search traffic and AI data; null if it failed to load. */
+  context: AuditReportContext | null;
   language: ReportLanguage;
   /** Absolute URLs of the Inter font files the app already ships. */
   fonts: { latin: string; latinExt: string };
@@ -49,10 +58,12 @@ export function renderAuditReportHtml(args: {
 
 function AuditReport({
   data,
+  context,
   language,
   fonts,
 }: {
   data: AuditResultsData;
+  context: AuditReportContext | null;
   language: ReportLanguage;
   fonts: { latin: string; latinExt: string };
 }) {
@@ -60,23 +71,26 @@ function AuditReport({
   const { audit, pages, lighthouse, issues } = data;
   const host = extractHostname(audit.startUrl);
   const auditedAt = parseTimestamp(audit.completedAt ?? audit.startedAt);
-  const date = auditedAt.toLocaleDateString(t.locale, {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const longDate = (value: string) =>
+    parseTimestamp(value).toLocaleDateString(t.locale, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  const date = longDate(audit.completedAt ?? audit.startedAt);
   const number = (value: number) => value.toLocaleString(t.locale);
+  const searchTraffic = context?.searchTraffic ?? null;
   const format: ReportFormat = {
     t,
+    ti: INSIGHT_STRINGS[language],
     number,
+    date: longDate,
     path: (url) => displayUrl(url, host),
+    issueTitle: (issueType) => reportIssueTitle(issueType, language),
+    traffic: searchTraffic ? buildTrafficLookup(searchTraffic) : null,
   };
 
-  const groups = groupIssues(issues).map((group) => {
-    const german = language === "de" ? germanIssueText[group.issueType] : null;
-    const howToFix = t.howToFixOverrides[group.issueType];
-    return { ...group, ...german, ...(howToFix ? { howToFix } : null) };
-  });
+  const groups = buildReportGroups(issues, language, format.traffic);
   const severityCounts = { critical: 0, warning: 0, info: 0 };
   for (const group of groups) {
     severityCounts[group.severity] += group.issues.length;
@@ -294,7 +308,17 @@ function AuditReport({
             ) : null}
           </Section>
 
-          <IssueSections groups={groups} format={format} />
+          <ProgressSection
+            data={data}
+            previous={context?.previous ?? null}
+            format={format}
+          />
+          <IssueSections
+            groups={groups}
+            searchRange={searchTraffic}
+            format={format}
+          />
+          <AiSection data={data} context={context} format={format} />
           <PerformanceSection data={data} format={format} />
           <PagesSection pages={pages} format={format} />
 

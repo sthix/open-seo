@@ -72,6 +72,7 @@ export function ResultsView({
 
   const tabs = (
     <ResultsHeader
+      projectId={projectId}
       data={data}
       issueCount={issues.length}
       pageCount={pages.length}
@@ -223,6 +224,7 @@ function useResultStats(
 }
 
 function ResultsHeader({
+  projectId,
   data,
   issueCount,
   pageCount,
@@ -232,6 +234,7 @@ function ResultsHeader({
   onTabChange,
   onExport,
 }: {
+  projectId: string;
   data: AuditResultsData;
   issueCount: number;
   pageCount: number;
@@ -263,7 +266,7 @@ function ResultsHeader({
       }}
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          <AuditReportMenu data={data} />
+          <AuditReportMenu projectId={projectId} data={data} />
           <ExportMenu actions={["sheets", "csv", "json"]} onExport={onExport} />
         </div>
       }

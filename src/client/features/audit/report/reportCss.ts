@@ -58,11 +58,14 @@ ul{padding:0;list-style:none}
 .lead{font-size:12pt;line-height:1.45;letter-spacing:-.01em;max-width:150mm}
 .note{margin-top:4mm;padding:3mm 4mm;background:#FBF3E2;border-left:.8mm solid #D9920F;break-inside:avoid}
 .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:5mm;margin-top:8mm}
+.tiles.five{grid-template-columns:repeat(5,1fr);margin-top:0}
 .tile{border-top:.3mm solid var(--ink);padding-top:2.5mm}
 .tile-value{font-size:21pt;font-weight:650;letter-spacing:-.03em;line-height:1.15;margin-bottom:1mm}
 
 .block{margin-top:9mm;break-inside:avoid}
 .block>h3{font-size:10pt;font-weight:650;margin-bottom:3mm}
+.block-intro{color:var(--muted);font-size:8.5pt;margin:-1.5mm 0 3.5mm;max-width:130mm}
+.top-pages{margin:0 0 10mm}
 .legend{display:grid;grid-template-columns:repeat(3,1fr);gap:5mm;margin-top:3.5mm}
 .legend p{color:var(--muted);font-size:8.5pt;line-height:1.4;margin-top:.8mm}
 .inline-legend{display:flex;flex-wrap:wrap;gap:1.5mm 7mm;margin-top:3mm}
@@ -90,8 +93,17 @@ td.url{width:34%;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;fon
 .finding-text{display:grid;grid-template-columns:1fr 1fr;gap:6mm;margin-bottom:3.5mm}
 .finding-text p{font-size:8.8pt;line-height:1.5;overflow-wrap:anywhere}
 .urls{display:grid;grid-template-columns:1fr 1fr;column-gap:6mm;font:7.5pt/1.5 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
-.urls li{overflow-wrap:anywhere;padding:.5mm 0;border-bottom:.2mm solid var(--rule)}
+.urls li{display:flex;justify-content:space-between;gap:3mm;overflow-wrap:anywhere;padding:.5mm 0;border-bottom:.2mm solid var(--rule)}
 .urls .more{font-family:"Inter Report",system-ui,sans-serif;color:var(--muted);border:0}
+
+.url-traffic{font-family:"Inter Report",system-ui,sans-serif;color:var(--muted);white-space:nowrap}
+
+.check{break-inside:avoid;border-left:.9mm solid;padding:.5mm 0 .5mm 5mm;margin-bottom:7mm}
+.check header{display:flex;justify-content:space-between;align-items:baseline;gap:4mm;margin-bottom:1.5mm}
+.check h3{font-size:12.5pt;font-weight:650;letter-spacing:-.015em;line-height:1.25}
+.check-value{font-size:12.5pt;font-weight:650;letter-spacing:-.015em;white-space:nowrap}
+.check p{font-size:8.8pt;line-height:1.5;color:var(--muted);max-width:140mm}
+.check table{margin-top:3.5mm}
 
 .about{break-inside:avoid;margin-top:9mm;background:var(--wash);padding:5mm 6mm}
 .about h3{font-size:9pt;font-weight:650;margin-bottom:1.5mm}
