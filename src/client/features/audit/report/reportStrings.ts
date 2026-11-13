@@ -30,6 +30,13 @@ export interface ReportStrings {
   statusCodes: string;
   statusNone: string;
   lighthouse: string;
+  /** Lighthouse's own bands: 90+ good, 50–89 needs work, below 50 poor. */
+  scoreRating: (score: number) => string;
+  score: string;
+  rating: string;
+  category: string;
+  startPageScore: string;
+  referringDomains: string;
   lighthouseNote: (tests: number, failed: number) => string;
   performance: string;
   accessibility: string;
@@ -102,6 +109,13 @@ const en: ReportStrings = {
   statusCodes: "HTTP status of crawled pages",
   statusNone: "No response",
   lighthouse: "Lighthouse averages",
+  scoreRating: (score) =>
+    score >= 90 ? "Good" : score >= 50 ? "Needs work" : "Poor",
+  score: "Score",
+  rating: "Rating",
+  category: "Category",
+  startPageScore: "Start page check",
+  referringDomains: "Websites linking here",
   lighthouseNote: (tests, failed) =>
     `Average of ${tests - failed} Lighthouse ${tests - failed === 1 ? "test" : "tests"} on sampled pages${failed > 0 ? `; ${failed} ${failed === 1 ? "test" : "tests"} failed` : ""}. 90 and above is good, 50 to 89 needs work, below 50 is poor.`,
   performance: "Performance",
@@ -185,6 +199,13 @@ const de: ReportStrings = {
   statusCodes: "HTTP-Status der gecrawlten Seiten",
   statusNone: "Keine Antwort",
   lighthouse: "Lighthouse-Durchschnitt",
+  scoreRating: (score) =>
+    score >= 90 ? "Gut" : score >= 50 ? "Verbesserungswürdig" : "Schwach",
+  score: "Wert",
+  rating: "Bewertung",
+  category: "Kategorie",
+  startPageScore: "Prüfung der Startseite",
+  referringDomains: "Verweisende Websites",
   lighthouseNote: (tests, failed) =>
     `Durchschnitt aus ${tests - failed === 1 ? "einem Lighthouse-Test" : `${tests - failed} Lighthouse-Tests`} auf ausgewählten Seiten${failed > 0 ? `; ${failed === 1 ? "ein Test ist" : `${failed} Tests sind`} fehlgeschlagen` : ""}. Ab 90 gut, 50 bis 89 verbesserungswürdig, unter 50 schwach.`,
   performance: "Performance",

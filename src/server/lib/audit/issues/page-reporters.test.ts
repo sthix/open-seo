@@ -24,13 +24,13 @@ function makePage(overrides: Partial<CrawledPageResult>): CrawledPageResult {
     title: "A perfectly reasonable page title",
     metaDescription:
       "A reasonable meta description that says something useful about the page.",
-    canonicalUrl: null,
+    canonicalUrl: "https://example.com/a",
     robotsMeta: null,
     xRobotsTag: null,
     headerCanonicalUrl: null,
-    ogTitle: null,
+    ogTitle: "A page",
     ogDescription: null,
-    ogImage: null,
+    ogImage: "https://example.com/og.png",
     h1Count: 1,
     h2Count: 0,
     h3Count: 0,
@@ -49,6 +49,10 @@ function makePage(overrides: Partial<CrawledPageResult>): CrawledPageResult {
     links: [HEALTHY_LINK],
     hasStructuredData: false,
     hreflangTags: [],
+    lang: "en",
+    hasViewport: true,
+    emptyLinkCount: 0,
+    hasPlaceholderText: false,
     isIndexable: true,
     responseTimeMs: 200,
     crawlDepth: 1,
@@ -91,6 +95,30 @@ describe("runPageReporters", () => {
 
   it("reports nothing for a healthy page", () => {
     expect(issueTypes(makePage({}))).toEqual([]);
+  });
+
+  it("reports missing document basics", () => {
+    expect(
+      issueTypes(
+        makePage({
+          hasViewport: false,
+          lang: null,
+          canonicalUrl: null,
+          ogImage: null,
+          emptyLinkCount: 2,
+          hasPlaceholderText: true,
+          htmlBytes: 600_000,
+        }),
+      ),
+    ).toEqual([
+      "empty-link-text",
+      "missing-viewport",
+      "missing-lang",
+      "missing-canonical",
+      "missing-social-tags",
+      "placeholder-text",
+      "large-html",
+    ]);
   });
 
   // A fetch that never produced a page yields exactly its fetch issue, and

@@ -1,9 +1,13 @@
 import type { InsightStrings } from "@/client/features/audit/report/reportInsightStrings";
 import type { TrafficLookup } from "@/client/features/audit/report/reportInsights";
-import type { ReportStrings } from "@/client/features/audit/report/reportStrings";
+import type {
+  ReportLanguage,
+  ReportStrings,
+} from "@/client/features/audit/report/reportStrings";
 
 /** What every section needs to print text, numbers, dates and URLs. */
 export interface ReportFormat {
+  language: ReportLanguage;
   t: ReportStrings;
   /** Text for the progress, search-traffic and AI-search parts. */
   ti: InsightStrings;

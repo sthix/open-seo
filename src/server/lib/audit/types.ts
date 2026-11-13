@@ -95,6 +95,24 @@ export interface PageAnalysis {
 
   // Hreflang
   hreflangTags: string[];
+
+  // Document basics
+  /** The <html lang> attribute. */
+  lang: string | null;
+  hasViewport: boolean;
+  /** From <meta charset> or its http-equiv form. */
+  charset: string | null;
+  hasDoctype: boolean;
+  /** A <link rel="icon"> in the HTML; /favicon.ico is not checked here. */
+  hasFavicon: boolean;
+  hasAppleTouchIcon: boolean;
+  iframeCount: number;
+  /** Links with neither text nor an image alt, aria-label or title. */
+  emptyLinkCount: number;
+  /** "Lorem ipsum" left in the visible text. */
+  hasPlaceholderText: boolean;
+  /** Headings in document order with their text (capped). */
+  headings: Array<{ level: number; text: string }>;
 }
 
 /** Lighthouse result for a single URL+strategy. */
@@ -170,6 +188,11 @@ export interface CrawledPageResult {
   links: PageLink[];
   hasStructuredData: boolean;
   hreflangTags: string[];
+  /** Transient (not persisted): inputs to the per-page reporters. */
+  lang: string | null;
+  hasViewport: boolean;
+  emptyLinkCount: number;
+  hasPlaceholderText: boolean;
   isIndexable: boolean;
   responseTimeMs: number;
   /** null = not reached via links (e.g. sitemap-seeded). */

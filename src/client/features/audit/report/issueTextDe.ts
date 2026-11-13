@@ -159,6 +159,55 @@ export const ISSUE_TEXT_DE: Record<AuditIssueType, IssueText> = {
     howToFix:
       "Ergänzen Sie Links zu verwandten Seiten, zur übergeordneten Kategorie oder zur Startseite. Wird die Navigation per JavaScript gerendert, sollte sie auch im serverseitig ausgelieferten HTML vorhanden sein.",
   },
+  "missing-viewport": {
+    title: "Kein mobiler Viewport",
+    explanation:
+      'Die Seite hat kein <meta name="viewport">. Smartphones stellen sie deshalb in Desktop-Breite dar und verkleinern sie. Google indexiert die mobile Version einer Seite; eine Seite, die sich auf dem Smartphone schlecht bedienen lässt, rankt und konvertiert schlechter.',
+    howToFix:
+      'Ergänzen Sie <meta name="viewport" content="width=device-width, initial-scale=1"> im <head> und prüfen Sie, ob sich das Layout an kleine Bildschirme anpasst.',
+  },
+  "empty-link-text": {
+    title: "Links ohne Linktext",
+    explanation:
+      "Die Seite enthält Links ohne Text, ohne Alt-Text am Bild und ohne aria-label oder title, meist reine Icon-Links. Suchmaschinen verstehen das Linkziel über den Linktext, und Screenreader lesen solche Links ohne Namen vor.",
+    howToFix:
+      "Geben Sie jedem Link einen kurzen, beschreibenden Text. Bei Icon- oder Bildlinks genügt ein Alt-Text am Bild oder ein aria-label am Link.",
+  },
+  "placeholder-text": {
+    title: "Platzhaltertext auf der Seite",
+    explanation:
+      "Die Seite enthält noch „Lorem ipsum“-Blindtext. Das wirkt auf Besucher unfertig und liefert Text, der nichts über das Thema der Seite aussagt.",
+    howToFix:
+      "Ersetzen Sie den Blindtext durch echte Inhalte oder entfernen Sie den Block, wenn er nicht gebraucht wird.",
+  },
+  "missing-canonical": {
+    title: "Keine Canonical-URL",
+    explanation:
+      "Die Seite gibt keine Canonical-URL an. Varianten mit Parametern, Tracking-Codes oder abweichendem Schrägstrich konkurrieren dann mit ihr, und Suchmaschinen wählen selbst, welche Version sie indexieren.",
+    howToFix:
+      'Ergänzen Sie im <head> <link rel="canonical" href="…"> mit der bevorzugten URL der Seite selbst (selbstreferenzierendes Canonical).',
+  },
+  "missing-lang": {
+    title: "Keine Sprache angegeben",
+    explanation:
+      "Das <html>-Element hat kein lang-Attribut. Browser, Screenreader und Übersetzungsdienste müssen die Sprache dann raten, und Suchmaschinen fehlt ein Signal, für welches Publikum die Seite gedacht ist.",
+    howToFix:
+      'Geben Sie die Sprache am <html>-Element an, etwa <html lang="de"> oder <html lang="de-AT">.',
+  },
+  "missing-social-tags": {
+    title: "Open-Graph-Angaben fehlen",
+    explanation:
+      "Der Seite fehlt og:title oder og:image. Wird sie auf LinkedIn, Facebook, in Slack oder in Messengern geteilt, ist die Vorschau geraten und meist ohne Bild.",
+    howToFix:
+      "Ergänzen Sie og:title, og:description und og:image (mindestens 1200 × 630 px) im <head>. Die meisten CMS und SEO-Plugins können das pro Seite befüllen.",
+  },
+  "large-html": {
+    title: "Großes HTML-Dokument",
+    explanation:
+      "Das HTML der Seite ist schon ohne Bilder, Skripte und Styles größer als 500 KB. Große Dokumente laden und verarbeiten sich auf mobilen Verbindungen langsam; meist sind eingebettete Daten oder aufgeblähtes Markup die Ursache.",
+    howToFix:
+      "Suchen Sie nach eingebetteten Daten (großer JSON-State, Base64-Bilder, SVG-Sprites) und wiederholtem Markup und lagern Sie diese in zwischenspeicherbare Dateien aus oder laden Sie sie bei Bedarf nach.",
+  },
   "title-too-long": {
     title: "Title zu lang",
     explanation:

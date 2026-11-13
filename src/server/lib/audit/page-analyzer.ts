@@ -26,6 +26,10 @@ const HEADING_LEVELS: Record<string, number> = {
   h6: 6,
 };
 const MAX_ANCHOR_CHARS = 200;
+/** Headings kept with their text, for the start-page check's outline. */
+const MAX_HEADINGS = 60;
+const MAX_HEADING_CHARS = 120;
+const PLACEHOLDER_TEXT = /\blorem ipsum\b/i;
 /**
  * Per-page caps on the extracted collections. Crawler-trap and mega-menu
  * pages can carry thousands of links/images per page, and crawled pages sit
@@ -111,6 +115,8 @@ interface OpenAnchor {
   href: string;
   rel: string;
   text: string[];
+  /** An image alt, aria-label or title that names the link without text. */
+  hasLabel: boolean;
 }
 
 /**
@@ -139,6 +145,16 @@ export function analyzeHtml(
   let hasAppRoot = false;
   let hasExecutableScript = false;
   const hreflangTags: string[] = [];
+  let lang: string | null = null;
+  let hasViewport = false;
+  let charset: string | null = null;
+  let hasDoctype = false;
+  let hasFavicon = false;
+  let hasAppleTouchIcon = false;
+  let iframeCount = 0;
+  let emptyLinkCount = 0;
+  const headings: Array<{ level: number; text: string }> = [];
+  let openHeading: { level: number; text: string[] } | null = null;
 
   const h1s: string[] = [];
   const headingOrder: number[] = [];
@@ -171,7 +187,15 @@ export function analyzeHtml(
     const content = attribs["content"];
     // HTML meta names are ASCII case-insensitive: "Description" is valid.
     const metaName = attribs["name"]?.toLowerCase();
-    if (metaName === "description") {
+    if (attribs["charset"]) {
+      charset ??= attribs["charset"].trim().toLowerCase();
+    } else if (attribs["http-equiv"]?.toLowerCase() === "content-type") {
+      const match = /charset=([^;\s]+)/i.exec(content ?? "");
+      if (match) charset ??= match[1].toLowerCase();
+    }
+    if (metaName === "viewport") {
+      hasViewport = true;
+    } else if (metaName === "description") {
       metaDescription ??= content?.trim() ?? "";
     } else if (metaName === "robots") {
       robotsMeta ??= content ?? null;
@@ -185,6 +209,11 @@ export function analyzeHtml(
   };
 
   const handleLinkTag = (attribs: Record<string, string>) => {
+    const rels = (attribs["rel"] ?? "").toLowerCase().split(/\s+/);
+    if (rels.includes("icon")) hasFavicon = true;
+    if (rels.some((rel) => rel.startsWith("apple-touch-icon"))) {
+      hasAppleTouchIcon = true;
+    }
     if (attribs["rel"] === "canonical") {
       canonical ??= attribs["href"] ?? null;
     } else if (attribs["rel"] === "alternate" && attribs["hreflang"]) {
@@ -192,18 +221,29 @@ export function analyzeHtml(
     }
   };
 
+  /** Tags read only for the document basics: language, frames, image links. */
+  const handleDocumentTag = (name: string, attribs: Record<string, string>) => {
+    if (openHeading && BLOCK_TAGS.has(name)) openHeading.text.push(" ");
+    if (name === "html") lang ??= attribs["lang"]?.trim() || null;
+    if (name === "iframe" || name === "frame") iframeCount += 1;
+    if (name === "img" && openAnchor && attribs["alt"]?.trim()) {
+      openAnchor.hasLabel = true;
+    }
+  };
+
   const closeAnchor = () => {
     if (!openAnchor) return;
-    const { href, rel, text } = openAnchor;
+    const { href, rel, text, hasLabel } = openAnchor;
     openAnchor = null;
-    if (linksByTarget.size >= MAX_EXTRACTED_LINKS) return;
-    const resolved = normalizeUrl(href, pageUrl);
-    if (!resolved || linksByTarget.has(resolved)) return;
     const anchor = text
       .join("")
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, MAX_ANCHOR_CHARS);
+    if (!anchor && !hasLabel) emptyLinkCount += 1;
+    if (linksByTarget.size >= MAX_EXTRACTED_LINKS) return;
+    const resolved = normalizeUrl(href, pageUrl);
+    if (!resolved || linksByTarget.has(resolved)) return;
     linksByTarget.set(resolved, {
       targetUrl: resolved,
       anchor: anchor || null,
@@ -214,6 +254,9 @@ export function analyzeHtml(
 
   const parser = new Parser(
     {
+      onprocessinginstruction(name) {
+        if (name.toLowerCase() === "!doctype") hasDoctype = true;
+      },
       onopentag(name, attribs) {
         if (NON_CONTENT_TAGS.has(name)) {
           suppressDepth += 1;
@@ -221,6 +264,7 @@ export function analyzeHtml(
         if (name === "noscript") noscriptDepth += 1;
         if (noscriptDepth > 0) return;
         if (BLOCK_TAGS.has(name)) addVisibleText(" ");
+        handleDocumentTag(name, attribs);
         if (headDepth === 0 && suppressDepth === 0) {
           hasAppRoot ||= APP_ROOT_IDS.has(attribs["id"]) || name === "app-root";
         }
@@ -274,6 +318,9 @@ export function analyzeHtml(
                 href,
                 rel: attribs["rel"]?.toLowerCase() ?? "",
                 text: [],
+                hasLabel: Boolean(
+                  attribs["aria-label"]?.trim() || attribs["title"]?.trim(),
+                ),
               };
             }
             break;
@@ -283,6 +330,7 @@ export function analyzeHtml(
         if (headingLevel !== undefined) {
           headingOrder.push(headingLevel);
           if (headingLevel === 1 && openH1 === null) openH1 = [];
+          openHeading ??= { level: headingLevel, text: [] };
         }
       },
       ontext(text) {
@@ -292,6 +340,7 @@ export function analyzeHtml(
           return;
         }
         if (openH1) openH1.push(text);
+        if (openHeading) openHeading.text.push(text);
         if (openAnchor) openAnchor.text.push(text);
         addVisibleText(text);
       },
@@ -315,6 +364,19 @@ export function analyzeHtml(
         if (name === "h1" && openH1) {
           h1s.push(openH1.join("").trim());
           openH1 = null;
+        }
+        if (openHeading && HEADING_LEVELS[name] === openHeading.level) {
+          if (headings.length < MAX_HEADINGS) {
+            headings.push({
+              level: openHeading.level,
+              text: openHeading.text
+                .join("")
+                .replace(/\s+/g, " ")
+                .trim()
+                .slice(0, MAX_HEADING_CHARS),
+            });
+          }
+          openHeading = null;
         }
       },
     },
@@ -355,5 +417,15 @@ export function analyzeHtml(
     links: Array.from(linksByTarget.values()),
     hasStructuredData,
     hreflangTags,
+    lang,
+    hasViewport,
+    charset,
+    hasDoctype,
+    hasFavicon,
+    hasAppleTouchIcon,
+    iframeCount,
+    emptyLinkCount,
+    hasPlaceholderText: PLACEHOLDER_TEXT.test(bodyText),
+    headings,
   };
 }
