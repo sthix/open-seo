@@ -4,7 +4,6 @@ import type { AuditResultsData } from "@/client/features/audit/results/types";
 import {
   PerformanceCells,
   Section,
-  SEVERITY_COLOR,
   SeverityLabel,
   statusColor,
   truncate,
@@ -82,11 +81,7 @@ export function IssueSections({
       </Section>
       <Section title={t.details} intro={t.detailsIntro}>
         {groups.map((group, index) => (
-          <article
-            key={group.issueType}
-            className="finding"
-            style={{ borderColor: SEVERITY_COLOR[group.severity] }}
-          >
+          <article key={group.issueType} className="finding">
             <header>
               <h3>
                 <span className="muted">{index + 1}</span>

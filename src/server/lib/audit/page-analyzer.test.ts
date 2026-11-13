@@ -13,7 +13,26 @@ import type { PageAnalysis, PageLink } from "@/server/lib/audit/types";
  * The previous cheerio implementation (minus passthrough fields), plus
  * separators around block elements so minified markup keeps word boundaries.
  */
-function analyzeHtmlWithCheerio(html: string, pageUrl: string): PageAnalysis {
+/** The fields the cheerio implementation extracted, before the streaming rewrite. */
+type ReferenceFields = Omit<
+  PageAnalysis,
+  | "javascriptShell"
+  | "lang"
+  | "hasViewport"
+  | "charset"
+  | "hasDoctype"
+  | "hasFavicon"
+  | "hasAppleTouchIcon"
+  | "iframeCount"
+  | "emptyLinkCount"
+  | "hasPlaceholderText"
+  | "headings"
+>;
+
+function analyzeHtmlWithCheerio(
+  html: string,
+  pageUrl: string,
+): ReferenceFields {
   const $ = cheerio.load(html);
 
   const title = $("title").first().text().trim();
@@ -121,7 +140,20 @@ const PAGE_URL = "https://example.com/blog/post";
 function expectParity(html: string) {
   const streamed = analyzeHtml(html, PAGE_URL, 200, 0);
   const reference = analyzeHtmlWithCheerio(html, PAGE_URL);
-  const { javascriptShell: _javascriptShell, ...existingAnalysis } = streamed;
+  const {
+    javascriptShell: _javascriptShell,
+    lang: _lang,
+    hasViewport: _hasViewport,
+    charset: _charset,
+    hasDoctype: _hasDoctype,
+    hasFavicon: _hasFavicon,
+    hasAppleTouchIcon: _hasAppleTouchIcon,
+    iframeCount: _iframeCount,
+    emptyLinkCount: _emptyLinkCount,
+    hasPlaceholderText: _hasPlaceholderText,
+    headings: _headings,
+    ...existingAnalysis
+  } = streamed;
   expect(existingAnalysis).toEqual(reference);
 }
 
@@ -320,4 +352,42 @@ describe("JavaScript app-shell detection", () => {
       expect(analyzeHtml(html, PAGE_URL, 200, 0).javascriptShell).toBe(false);
     },
   );
+});
+
+describe("analyzeHtml document basics", () => {
+  it("reads language, viewport, charset, icons, headings and link texts", () => {
+    const analysis = analyzeHtml(
+      `<!doctype html><html lang="de"><head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <link rel="shortcut icon" href="/favicon.ico">
+        <link rel="apple-touch-icon" href="/icon.png">
+      </head><body>
+        <h1>Main <em>topic</em></h1><h3>Detail</h3>
+        <a href="/a"><svg></svg></a>
+        <a href="/b"><img src="/logo.png" alt="Home"></a>
+        <a href="/c" aria-label="Cart"><i></i></a>
+        <iframe src="https://maps.example.com"></iframe>
+        <p>Lorem ipsum dolor sit amet.</p>
+      </body></html>`,
+      PAGE_URL,
+      200,
+      0,
+    );
+    expect(analysis).toMatchObject({
+      lang: "de",
+      hasViewport: true,
+      charset: "utf-8",
+      hasDoctype: true,
+      hasFavicon: true,
+      hasAppleTouchIcon: true,
+      iframeCount: 1,
+      emptyLinkCount: 1,
+      hasPlaceholderText: true,
+      headings: [
+        { level: 1, text: "Main topic" },
+        { level: 3, text: "Detail" },
+      ],
+    });
+  });
 });

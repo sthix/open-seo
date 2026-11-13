@@ -100,7 +100,7 @@ const MAX_DISCOVERY_REDIRECT_HOPS = 5;
  * policy and crawler-access headers — bot-protection credentials — are
  * re-matched against the hop's host instead of riding along to another site.
  */
-async function fetchFollowingRedirects(
+export async function fetchFollowingRedirects(
   url: string,
   timeoutMs: number,
   access: CrawlerAccess | null | undefined,

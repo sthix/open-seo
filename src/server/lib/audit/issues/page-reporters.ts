@@ -31,6 +31,7 @@ const META_DESCRIPTION_MIN_CHARS = 70;
 const THIN_CONTENT_WORDS = 150;
 const SLOW_RESPONSE_MS = 1500;
 const DEEP_PAGE_DEPTH = 5;
+const LARGE_HTML_CHARS = 500_000;
 // Meta tags are uncapped in the HTML, so bound the copy stored on each issue.
 const MAX_FLAGGED_TEXT_CHARS = 100;
 
@@ -45,6 +46,36 @@ function hasHeadingLevelSkip(headingOrder: number[]): boolean {
     if (headingOrder[i] > headingOrder[i - 1] + 1) return true;
   }
   return false;
+}
+
+type Report = (
+  issueType: AuditIssueType,
+  details?: Record<string, unknown>,
+) => void;
+
+/** Links, viewport, language, canonical, social tags and page weight. */
+function reportDocumentBasics(page: CrawledPageResult, report: Report) {
+  if (page.emptyLinkCount > 0) {
+    report("empty-link-text", { emptyLinks: page.emptyLinkCount });
+  }
+
+  if (!page.hasViewport) report("missing-viewport");
+  if (!page.lang) report("missing-lang");
+  if (page.isIndexable && !page.canonicalUrl && !page.headerCanonicalUrl) {
+    report("missing-canonical");
+  }
+  if (page.isIndexable && (!page.ogTitle || !page.ogImage)) {
+    report("missing-social-tags", {
+      missing: [
+        page.ogTitle ? null : "og:title",
+        page.ogImage ? null : "og:image",
+      ].filter(Boolean),
+    });
+  }
+  if (page.hasPlaceholderText) report("placeholder-text");
+  if (page.htmlBytes > LARGE_HTML_CHARS) {
+    report("large-html", { htmlChars: page.htmlBytes });
+  }
 }
 
 export function runPageReporters(page: CrawledPageResult): DetectedIssue[] {
@@ -181,6 +212,7 @@ export function runPageReporters(page: CrawledPageResult): DetectedIssue[] {
   if (page.isIndexable && page.links.length === 0) {
     report("no-outgoing-links");
   }
+  reportDocumentBasics(page, report);
 
   return issues;
 }

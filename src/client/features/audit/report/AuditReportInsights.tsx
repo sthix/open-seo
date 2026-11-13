@@ -8,7 +8,6 @@ import {
   type AuditReportContext,
 } from "@/client/features/audit/report/reportInsights";
 import {
-  Dot,
   Section,
   SeverityLabel,
   Tile,
@@ -21,9 +20,9 @@ import {
 const MAX_TOP_PAGES = 5;
 const MAX_PROGRESS_ROWS = 14;
 
-const GOOD = "#1F8A5B";
-const WARN = "#D9920F";
-const BAD = "#C4352B";
+const GOOD = "#1F7A52";
+const WARN = "#A86A00";
+const BAD = "#B3332A";
 const NEUTRAL = "#B9B9C4";
 
 /** The pages with open issues that get the most search impressions. */
@@ -278,7 +277,6 @@ export function AiSection({
                       className="num severity"
                       style={{ color: crawler.allowed ? GOOD : BAD }}
                     >
-                      <Dot color={crawler.allowed ? GOOD : BAD} />
                       {crawler.allowed ? ti.allowed : ti.blocked}
                     </td>
                   </tr>
@@ -341,7 +339,7 @@ function Check({
   children?: ReactNode;
 }) {
   return (
-    <div className="check" style={{ borderColor: color }}>
+    <div className="check">
       <header>
         <h3>{title}</h3>
         <span

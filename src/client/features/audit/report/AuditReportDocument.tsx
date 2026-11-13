@@ -24,14 +24,18 @@ import { reportCss } from "@/client/features/audit/report/reportCss";
 import {
   CoverStat,
   Dot,
-  Gauge,
   Section,
   SEVERITIES,
   SEVERITY_COLOR,
   SeverityBar,
   Tile,
   displayUrl,
+  scoreColor,
 } from "@/client/features/audit/report/reportParts";
+import { BacklinksSection } from "@/client/features/audit/report/BacklinksSection";
+import { StartPageSection } from "@/client/features/audit/report/StartPageSection";
+import { buildStartPageAreas } from "@/client/features/audit/report/reportStartPageChecks";
+import { overallScore } from "@/client/features/audit/report/reportStartPage";
 import {
   REPORT_STRINGS,
   type ReportLanguage,
@@ -81,6 +85,7 @@ function AuditReport({
   const number = (value: number) => value.toLocaleString(t.locale);
   const searchTraffic = context?.searchTraffic ?? null;
   const format: ReportFormat = {
+    language,
     t,
     ti: INSIGHT_STRINGS[language],
     number,
@@ -115,10 +120,10 @@ function AuditReport({
         );
 
   const statusBands = [
-    { label: "2xx", color: "#1F8A5B", match: (code: number) => code < 300 },
-    { label: "3xx", color: "#D9920F", match: (code: number) => code < 400 },
-    { label: "4xx", color: "#C4352B", match: (code: number) => code < 500 },
-    { label: "5xx", color: "#7A1F18", match: () => true },
+    { label: "2xx", color: "#3F8F6B", match: (code: number) => code < 300 },
+    { label: "3xx", color: "#C99A3E", match: (code: number) => code < 400 },
+    { label: "4xx", color: "#C25A50", match: (code: number) => code < 500 },
+    { label: "5xx", color: "#7A2A22", match: () => true },
   ];
   const statusCounts = [
     ...statusBands.map((band) => ({ ...band, count: 0 })),
@@ -148,6 +153,19 @@ function AuditReport({
       values.reduce((sum, value) => sum + value, 0) / values.length,
     );
   };
+  const startPage = context?.startPage ?? null;
+  const startPageScore = startPage
+    ? overallScore(buildStartPageAreas(startPage, language))
+    : null;
+  const referringDomains = context?.backlinks?.summary.referringDomains ?? null;
+  const lighthouseRows = (
+    [
+      ["performanceScore", t.performance],
+      ["seoScore", t.seo],
+      ["accessibilityScore", t.accessibility],
+      ["bestPracticesScore", t.bestPractices],
+    ] as const
+  ).map(([key, label]) => ({ label, score: averageScore(key) }));
   const fileDate = Number.isNaN(auditedAt.getTime())
     ? ""
     : `-${auditedAt.toISOString().slice(0, 10)}`;
@@ -179,12 +197,14 @@ function AuditReport({
 
         <section className="cover">
           <div className="cover-top">
-            <span className="label">{t.kicker}</span>
-            <span className="label">{date}</span>
+            <span>{t.kicker}</span>
+            <span>{date}</span>
           </div>
-          <div>
+          <div className="cover-main">
             <h1 className={host.length > 24 ? "long" : undefined}>{host}</h1>
-            <SeverityBar counts={severityCounts} className="cover-bar" />
+            <p className="cover-sub">
+              {t.auditedOn} {date} · {audit.startUrl}
+            </p>
           </div>
           <div className="cover-stats">
             <CoverStat
@@ -197,7 +217,6 @@ function AuditReport({
                 key={severity}
                 value={number(severityCounts[severity])}
                 label={t.severity[severity]}
-                color={SEVERITY_COLOR[severity]}
               />
             ))}
           </div>
@@ -230,6 +249,18 @@ function AuditReport({
                 }
                 label={t.avgResponse}
               />
+              {startPageScore != null ? (
+                <Tile
+                  value={`${startPageScore} / 100`}
+                  label={t.startPageScore}
+                />
+              ) : null}
+              {referringDomains != null ? (
+                <Tile
+                  value={number(referringDomains)}
+                  label={t.referringDomains}
+                />
+              ) : null}
             </div>
 
             {issues.length > 0 ? (
@@ -283,21 +314,31 @@ function AuditReport({
             {lighthouseOk.length > 0 ? (
               <div className="block">
                 <h3>{t.lighthouse}</h3>
-                <div className="gauges">
-                  <Gauge
-                    score={averageScore("performanceScore")}
-                    label={t.performance}
-                  />
-                  <Gauge score={averageScore("seoScore")} label={t.seo} />
-                  <Gauge
-                    score={averageScore("accessibilityScore")}
-                    label={t.accessibility}
-                  />
-                  <Gauge
-                    score={averageScore("bestPracticesScore")}
-                    label={t.bestPractices}
-                  />
-                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>{t.category}</th>
+                      <th className="num">{t.score}</th>
+                      <th className="num">{t.rating}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lighthouseRows.map((row) => (
+                      <tr key={row.label}>
+                        <td className="strong">{row.label}</td>
+                        <td
+                          className="num strong"
+                          style={{ color: scoreColor(row.score) }}
+                        >
+                          {row.score ?? "–"}
+                        </td>
+                        <td className="num">
+                          {row.score == null ? "–" : t.scoreRating(row.score)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
                 <p className="caption">
                   {t.lighthouseNote(
                     lighthouse.length,
@@ -316,6 +357,11 @@ function AuditReport({
           <IssueSections
             groups={groups}
             searchRange={searchTraffic}
+            format={format}
+          />
+          <StartPageSection page={startPage} format={format} />
+          <BacklinksSection
+            backlinks={context?.backlinks ?? null}
             format={format}
           />
           <AiSection data={data} context={context} format={format} />

@@ -184,6 +184,62 @@ export const AUDIT_ISSUE_TYPES = {
     howToFix:
       "Add links to related pages, the parent category, or the homepage. If the page's navigation is rendered by JavaScript, make sure it also exists in the server-rendered HTML.",
   },
+  "missing-viewport": {
+    severity: "warning",
+    title: "No mobile viewport",
+    explanation:
+      'The page has no <meta name="viewport">, so phones render it at desktop width and shrink it. Google indexes the mobile version of a page, and a page that is hard to use on a phone ranks and converts worse.',
+    howToFix:
+      'Add <meta name="viewport" content="width=device-width, initial-scale=1"> to the <head> and check that the layout adapts to small screens.',
+  },
+  "empty-link-text": {
+    severity: "warning",
+    title: "Links without text",
+    explanation:
+      "The page has links with no text, no image alt text, and no aria-label or title, typically icon links. Search engines use link text to understand the target page, and screen readers announce these links without a name.",
+    howToFix:
+      "Give every link a short, descriptive text. For icon or image links, add alt text to the image or an aria-label to the link.",
+  },
+  "placeholder-text": {
+    severity: "warning",
+    title: "Placeholder text left on the page",
+    explanation:
+      'The page still contains "Lorem ipsum" placeholder text. It looks unfinished to visitors and adds text that says nothing about the page\'s topic.',
+    howToFix:
+      "Replace the placeholder with real content, or remove the block if it is not needed.",
+  },
+  "missing-canonical": {
+    severity: "info",
+    title: "No canonical URL",
+    explanation:
+      "The page declares no canonical URL. Parameter, tracking and trailing-slash variants of the URL then compete with it, and search engines pick the version they index themselves.",
+    howToFix:
+      'Add <link rel="canonical" href="…"> to the <head> with the page\'s own preferred URL (a self-referencing canonical).',
+  },
+  "missing-lang": {
+    severity: "info",
+    title: "No language declared",
+    explanation:
+      "The <html> element has no lang attribute. Browsers, screen readers and translation tools then guess the page's language, and search engines get one fewer signal for which audience the page is for.",
+    howToFix:
+      'Set the language on the <html> element, e.g. <html lang="de"> or <html lang="en-GB">.',
+  },
+  "missing-social-tags": {
+    severity: "info",
+    title: "Open Graph tags missing",
+    explanation:
+      "The page lacks og:title or og:image. When it is shared on LinkedIn, Facebook, Slack or in messengers, the preview falls back to a guess, often without an image.",
+    howToFix:
+      "Add og:title, og:description and og:image (at least 1200×630 px) to the <head>; most CMS and SEO plugins can fill them per page.",
+  },
+  "large-html": {
+    severity: "info",
+    title: "Large HTML document",
+    explanation:
+      "The page's HTML is over 500 KB before images, scripts and styles. Large documents load and parse slowly on mobile connections, and inlined data or markup bloat is usually the cause.",
+    howToFix:
+      "Look for inlined data (large JSON state, base64 images, SVG sprites) and repeated markup, and move it into cached files or load it on demand.",
+  },
   "title-too-long": {
     severity: "info",
     title: "Title too long",

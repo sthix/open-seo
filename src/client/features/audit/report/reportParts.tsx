@@ -8,15 +8,15 @@ type Lighthouse = AuditResultsData["lighthouse"][number];
 export const SEVERITIES: IssueSeverity[] = ["critical", "warning", "info"];
 
 export const SEVERITY_COLOR: Record<IssueSeverity, string> = {
-  critical: "#C4352B",
-  warning: "#D9920F",
-  info: "#4A74B8",
+  critical: "#B3332A",
+  warning: "#A86A00",
+  info: "#3F5F8F",
 };
 
 const SCORE_COLOR = {
-  success: "#1F8A5B",
-  warning: "#D9920F",
-  destructive: "#C4352B",
+  success: "#1F7A52",
+  warning: "#A86A00",
+  destructive: "#B3332A",
 } as const;
 
 export function Section({
@@ -39,22 +39,11 @@ export function Section({
   );
 }
 
-export function CoverStat({
-  value,
-  label,
-  color,
-}: {
-  value: string;
-  label: string;
-  color?: string;
-}) {
+export function CoverStat({ value, label }: { value: string; label: string }) {
   return (
     <div>
       <div className="cover-value">{value}</div>
-      <div className="label">
-        {color ? <Dot color={color} /> : null}
-        {label}
-      </div>
+      <div className="label">{label}</div>
     </div>
   );
 }
@@ -91,7 +80,6 @@ export function SeverityLabel({
 }) {
   return (
     <span className="severity" style={{ color: SEVERITY_COLOR[severity] }}>
-      <Dot color={SEVERITY_COLOR[severity]} />
       {label}
     </span>
   );
@@ -121,49 +109,9 @@ export function SeverityBar({
   );
 }
 
-const GAUGE_RADIUS = 30;
-const GAUGE_LENGTH = 2 * Math.PI * GAUGE_RADIUS;
-
-export function Gauge({
-  score,
-  label,
-}: {
-  score: number | null;
-  label: string;
-}) {
+export function scoreColor(score: number | null): string | undefined {
   const tone = scoreTone(score);
-  const color = tone ? SCORE_COLOR[tone] : "#B9B9C4";
-  return (
-    <div className="gauge">
-      <svg viewBox="0 0 72 72" role="img" aria-label={`${label}: ${score}`}>
-        <circle
-          cx="36"
-          cy="36"
-          r={GAUGE_RADIUS}
-          fill="none"
-          stroke="#E6E6EC"
-          strokeWidth="5"
-        />
-        {score != null ? (
-          <circle
-            cx="36"
-            cy="36"
-            r={GAUGE_RADIUS}
-            fill="none"
-            stroke={color}
-            strokeWidth="5"
-            strokeLinecap="round"
-            strokeDasharray={`${(score / 100) * GAUGE_LENGTH} ${GAUGE_LENGTH}`}
-            transform="rotate(-90 36 36)"
-          />
-        ) : null}
-        <text x="36" y="42" textAnchor="middle" fill={color}>
-          {score ?? "–"}
-        </text>
-      </svg>
-      <div className="label">{label}</div>
-    </div>
-  );
+  return tone ? SCORE_COLOR[tone] : undefined;
 }
 
 export function PerformanceCells({

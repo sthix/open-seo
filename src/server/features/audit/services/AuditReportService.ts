@@ -5,6 +5,9 @@ import { GscService } from "@/server/features/gsc/services/GscService";
 import { resolveDateRange } from "@/server/features/gsc/searchAnalytics";
 import { toDimensionRows } from "@/server/features/gsc/searchPerformanceReport";
 import { fetchSiteTextFile } from "@/server/lib/audit/discovery";
+import type { BillingCustomerContext } from "@/server/billing/subscription";
+import { loadReportBacklinks } from "@/server/features/audit/services/reportBacklinks";
+import { loadStartPageCheck } from "@/server/features/audit/services/startPageCheck";
 import { AppError } from "@/server/lib/errors";
 import { AI_CRAWLERS } from "@/shared/ai-crawlers";
 
@@ -121,22 +124,44 @@ async function optional<T>(load: () => Promise<T>): Promise<T | null> {
 }
 
 /**
- * What the PDF report shows beyond the audit itself. Every part is optional:
+ * What the PDF report shows beyond the audit itself, including a check of
+ * the start page read now and the domain's backlinks. Every part is optional:
  * a first audit has nothing to compare with, and a project may have neither
  * Search Console nor prompt tracking.
  */
-async function getReportContext(auditId: string, projectId: string) {
+async function getReportContext(
+  auditId: string,
+  customer: BillingCustomerContext & { projectId: string },
+) {
+  const { projectId } = customer;
   const audit = await AuditRepository.getAuditForProject(auditId, projectId);
   if (!audit) throw new AppError("NOT_FOUND");
 
-  const [previous, searchTraffic, aiCrawlerAccess, aiMentions] =
-    await Promise.all([
-      optional(() => loadPreviousAudit(audit)),
-      optional(() => loadSearchTraffic(projectId)),
-      optional(() => loadAiCrawlerAccess(audit.startUrl)),
-      optional(() => loadAiMentions(projectId)),
-    ]);
-  return { previous, searchTraffic, aiCrawlerAccess, aiMentions };
+  const [
+    previous,
+    searchTraffic,
+    aiCrawlerAccess,
+    aiMentions,
+    startPage,
+    backlinks,
+  ] = await Promise.all([
+    optional(() => loadPreviousAudit(audit)),
+    optional(() => loadSearchTraffic(projectId)),
+    optional(() => loadAiCrawlerAccess(audit.startUrl)),
+    optional(() => loadAiMentions(projectId)),
+    optional(() => loadStartPageCheck(audit.startUrl)),
+    // Billed like the Backlinks page, and cached for hours, so exporting the
+    // report again soon after does not pay for the same lookups twice.
+    optional(() => loadReportBacklinks(audit.startUrl, customer)),
+  ]);
+  return {
+    previous,
+    searchTraffic,
+    aiCrawlerAccess,
+    aiMentions,
+    startPage,
+    backlinks,
+  };
 }
 
 export const AuditReportService = { getReportContext } as const;

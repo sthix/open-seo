@@ -77,7 +77,7 @@ export const getAuditReportContext = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(getAuditStatusSchema)
   .handler(async ({ data, context }) => {
-    return AuditReportService.getReportContext(data.auditId, context.projectId);
+    return AuditReportService.getReportContext(data.auditId, context);
   });
 
 export const getAuditHistory = createServerFn({ method: "POST" })
