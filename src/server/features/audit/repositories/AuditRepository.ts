@@ -4,7 +4,7 @@
  * audit_pages, audit_issues, and stored Lighthouse results. Link edges live
  * in the per-audit scratchpad Durable Object, not here.
  */
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, lt } from "drizzle-orm";
 import { db } from "@/db";
 import {
   audits,
@@ -261,6 +261,21 @@ async function getLatestAuditForProject(projectId: string) {
   });
 }
 
+/** Completed audits of a project that started before `startedBefore`, newest first. */
+async function getEarlierCompletedAudits(
+  projectId: string,
+  startedBefore: string,
+) {
+  return db.query.audits.findMany({
+    where: and(
+      eq(audits.projectId, projectId),
+      eq(audits.status, "completed"),
+      lt(audits.startedAt, startedBefore),
+    ),
+    orderBy: desc(audits.startedAt),
+  });
+}
+
 async function getIssuesForAudit(
   auditId: string,
   filters: { severity?: "critical" | "warning" | "info"; issueType?: string },
@@ -429,6 +444,7 @@ export const AuditRepository = {
   insertLighthouseResults,
   getAuditForProject,
   getLatestAuditForProject,
+  getEarlierCompletedAudits,
   getIssuesForAudit,
   getPagesForAudit,
   countPagesByFetchClass,

@@ -1,6 +1,5 @@
 import { sortBy } from "remeda";
 import { isLighthouseFailure } from "@/client/features/audit/results/AuditResultsTableFilterLogic";
-import type { groupIssues } from "@/client/features/audit/results/IssuesView";
 import type { AuditResultsData } from "@/client/features/audit/results/types";
 import {
   PerformanceCells,
@@ -10,33 +9,35 @@ import {
   statusColor,
   truncate,
 } from "@/client/features/audit/report/reportParts";
-import type { ReportStrings } from "@/client/features/audit/report/reportStrings";
+import { TopPagesBlock } from "@/client/features/audit/report/AuditReportInsights";
+import type { ReportFormat } from "@/client/features/audit/report/reportFormat";
+import type { ReportIssueGroup } from "@/client/features/audit/report/reportGroups";
 
 /** Rows a section prints before it points at the CSV export instead. */
 const MAX_URLS_PER_FINDING = 8;
 const MAX_PERFORMANCE_ROWS = 40;
 const MAX_PAGE_ROWS = 100;
 
-/** What every section needs to print text, numbers and URLs. */
-export interface ReportFormat {
-  t: ReportStrings;
-  number: (value: number) => string;
-  /** A page on the audited host as its path; anything else in full. */
-  path: (url: string) => string;
-}
-
 /** The ranked list of issue kinds, then one card per kind. */
 export function IssueSections({
   groups,
-  format: { t, number, path },
+  searchRange,
+  format,
 }: {
-  groups: ReturnType<typeof groupIssues>;
+  groups: ReportIssueGroup[];
+  /** The Search Console period behind the traffic numbers. */
+  searchRange: { startDate: string; endDate: string } | null;
   format: ReportFormat;
 }) {
+  const { t, ti, number, date, path, traffic } = format;
   if (groups.length === 0) return null;
   return (
     <>
-      <Section title={t.priorities} intro={t.prioritiesIntro}>
+      <Section
+        title={t.priorities}
+        intro={traffic ? ti.prioritiesIntro : t.prioritiesIntro}
+      >
+        <TopPagesBlock groups={groups} format={format} />
         <table>
           <thead>
             <tr>
@@ -44,6 +45,8 @@ export function IssueSections({
               <th>{t.issue}</th>
               <th />
               <th className="num">{t.pages}</th>
+              {traffic ? <th className="num">{ti.clicks}</th> : null}
+              {traffic ? <th className="num">{ti.impressions}</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -58,10 +61,24 @@ export function IssueSections({
                   />
                 </td>
                 <td className="num strong">{number(group.issues.length)}</td>
+                {group.traffic ? (
+                  <td className="num">{number(group.traffic.clicks)}</td>
+                ) : null}
+                {group.traffic ? (
+                  <td className="num">{number(group.traffic.impressions)}</td>
+                ) : null}
               </tr>
             ))}
           </tbody>
         </table>
+        {traffic && searchRange ? (
+          <p className="caption">
+            {ti.trafficNote(
+              date(searchRange.startDate),
+              date(searchRange.endDate),
+            )}
+          </p>
+        ) : null}
       </Section>
       <Section title={t.details} intro={t.detailsIntro}>
         {groups.map((group, index) => (
@@ -95,7 +112,15 @@ export function IssueSections({
             <h4>{t.affectedPages(group.issues.length)}</h4>
             <ul className="urls">
               {group.issues.slice(0, MAX_URLS_PER_FINDING).map((issue) => (
-                <li key={issue.id}>{path(issue.pageUrl)}</li>
+                <li key={issue.id}>
+                  <span>{path(issue.pageUrl)}</span>
+                  {traffic && traffic(issue.pageUrl).impressions > 0 ? (
+                    <span className="url-traffic">
+                      {number(traffic(issue.pageUrl).impressions)}{" "}
+                      {ti.impressionsShort}
+                    </span>
+                  ) : null}
+                </li>
               ))}
               {group.issues.length > MAX_URLS_PER_FINDING ? (
                 <li className="more">
