@@ -65,6 +65,11 @@ export interface ReportStrings {
     rendered: boolean;
     lighthouse: boolean;
   }) => string;
+  /**
+   * Fixes that replace the app's own wording, which names the crawler and
+   * this app's settings: a report reader has neither.
+   */
+  howToFixOverrides: Partial<Record<string, string>>;
   footer: (host: string) => string;
   pageOf: string;
 }
@@ -137,7 +142,15 @@ const en: ReportStrings = {
   response: "Response",
   about: "About this report",
   aboutText: ({ startUrl, maxPages, rendered, lighthouse }) =>
-    `This report comes from an automated crawl with OpenSEO, starting at ${startUrl} and limited to ${maxPages} pages. JavaScript rendering was ${rendered ? "on" : "off"}; Lighthouse tests ${lighthouse ? "ran on a sample of pages" : "were not run"}. Automated checks find technical problems reliably, but they cannot judge content quality or search demand. Read the findings as a prioritised technical to-do list.`,
+    `This report comes from an automated crawl starting at ${startUrl} and limited to ${maxPages} pages. JavaScript rendering was ${rendered ? "on" : "off"}; Lighthouse tests ${lighthouse ? "ran on a sample of pages" : "were not run"}. Automated checks find technical problems reliably, but they cannot judge content quality or search demand. Read the findings as a prioritised technical to-do list.`,
+  howToFixOverrides: {
+    "blocked-page":
+      "Allow our audit crawler in the site's WAF or bot-protection settings (on Cloudflare: a WAF custom rule that skips bot protection for the crawler's user agent), then have the audit re-run. On Shopify, grant crawler access instead (Online Store → Preferences → Crawler access). We will send you the crawler's user agent on request.",
+    "rate-limited-page":
+      "Raise the rate limit for crawlers, or exempt our audit crawler's user agent from the rate-limiting rules, then have the audit re-run. An audit of fewer pages also helps if the limit is strict. On Shopify, grant crawler access instead (Online Store → Preferences → Crawler access).",
+    "crawl-rate-limited":
+      "Have the audit re-run after the site's rate limit resets, or exempt our audit crawler from the rate limit. On Shopify, grant crawler access instead (Online Store → Preferences → Crawler access).",
+  },
   footer: (host) => `Site audit · ${host}`,
   pageOf: "of",
 };
@@ -212,7 +225,9 @@ const de: ReportStrings = {
   response: "Antwortzeit",
   about: "Über diesen Bericht",
   aboutText: ({ startUrl, maxPages, rendered, lighthouse }) =>
-    `Dieser Bericht beruht auf einem automatisierten Crawl mit OpenSEO, ausgehend von ${startUrl} und begrenzt auf ${maxPages} Seiten. JavaScript-Rendering war ${rendered ? "aktiviert" : "deaktiviert"}; Lighthouse-Tests ${lighthouse ? "liefen auf einer Auswahl von Seiten" : "wurden nicht durchgeführt"}. Automatisierte Prüfungen finden technische Probleme zuverlässig, können aber weder die Qualität der Inhalte noch die Suchnachfrage beurteilen. Verstehen Sie die Befunde als priorisierte technische Aufgabenliste.`,
+    `Dieser Bericht beruht auf einem automatisierten Crawl, ausgehend von ${startUrl} und begrenzt auf ${maxPages} Seiten. JavaScript-Rendering war ${rendered ? "aktiviert" : "deaktiviert"}; Lighthouse-Tests ${lighthouse ? "liefen auf einer Auswahl von Seiten" : "wurden nicht durchgeführt"}. Automatisierte Prüfungen finden technische Probleme zuverlässig, können aber weder die Qualität der Inhalte noch die Suchnachfrage beurteilen. Verstehen Sie die Befunde als priorisierte technische Aufgabenliste.`,
+  // The German issue texts are written for the report already.
+  howToFixOverrides: {},
   footer: (host) => `Website-Audit · ${host}`,
   pageOf: "von",
 };
