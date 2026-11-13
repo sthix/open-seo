@@ -74,7 +74,8 @@ function AuditReport({
 
   const groups = groupIssues(issues).map((group) => {
     const german = language === "de" ? germanIssueText[group.issueType] : null;
-    return german ? { ...group, ...german } : group;
+    const howToFix = t.howToFixOverrides[group.issueType];
+    return { ...group, ...german, ...(howToFix ? { howToFix } : null) };
   });
   const severityCounts = { critical: 0, warning: 0, info: 0 };
   for (const group of groups) {

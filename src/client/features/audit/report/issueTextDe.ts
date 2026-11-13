@@ -17,7 +17,7 @@ export const ISSUE_TEXT_DE: Record<AuditIssueType, IssueText> = {
     explanation:
       "Die Website hat statt der Seite eine Bot-Abfrage oder eine Zugriffsverweigerung ausgeliefert (zum Beispiel eine Cloudflare-Challenge oder einen 403-Status). Die Seite konnte deshalb nicht geprüft werden. Andere Crawler, etwa die von Suchmaschinen, stoßen möglicherweise auf ähnliche Hürden.",
     howToFix:
-      "Geben Sie den User-Agent „OpenSEO-Audit“ in den WAF- bzw. Bot-Schutz-Einstellungen frei (bei Cloudflare: eine benutzerdefinierte WAF-Regel, die den Bot-Schutz überspringt, wenn der User-Agent „OpenSEO-Audit“ enthält) und starten Sie das Audit erneut. Bei Shopify nutzen Sie stattdessen den Crawler-Zugriff (Onlineshop › Einstellungen › Crawler-Zugriff) und hinterlegen die Signatur in OpenSEO unter Einstellungen › Crawler-Zugriff. Anleitung: https://openseo.so/docs/crawler",
+      "Geben Sie unseren Audit-Crawler in den WAF- bzw. Bot-Schutz-Einstellungen frei (bei Cloudflare: eine benutzerdefinierte WAF-Regel, die den Bot-Schutz für den User-Agent des Crawlers überspringt) und lassen Sie das Audit danach wiederholen. Bei Shopify erteilen Sie stattdessen den Crawler-Zugriff (Onlineshop › Einstellungen › Crawler-Zugriff). Den User-Agent des Crawlers nennen wir Ihnen auf Anfrage.",
   },
   "javascript-rendering-suspected": {
     title: "Inhalte benötigen möglicherweise JavaScript",
@@ -31,14 +31,14 @@ export const ISSUE_TEXT_DE: Record<AuditIssueType, IssueText> = {
     explanation:
       "Der Server hat mit 429 Too Many Requests geantwortet, die Seite konnte daher nicht geprüft werden. Der Crawler hat die vom Server genannte Wartezeit (Retry-After) eingehalten und die Seite ein weiteres Mal abgerufen, bevor er fortgefahren ist.",
     howToFix:
-      "Erhöhen Sie das Anfragelimit für Crawler oder nehmen Sie den User-Agent „OpenSEO-Audit“ von der Ratenbegrenzung aus (bei Cloudflare: eine Ausnahme in der Rate-Limiting-Regel für diesen User-Agent). Starten Sie das Audit danach erneut. Bei einem strengen Limit hilft auch ein Audit mit weniger Seiten. Bei Shopify nutzen Sie stattdessen den Crawler-Zugriff (Onlineshop › Einstellungen › Crawler-Zugriff). Anleitung: https://openseo.so/docs/crawler",
+      "Erhöhen Sie das Anfragelimit für Crawler oder nehmen Sie den User-Agent unseres Audit-Crawlers von der Ratenbegrenzung aus und lassen Sie das Audit danach wiederholen. Bei einem strengen Limit hilft auch ein Audit mit weniger Seiten. Bei Shopify erteilen Sie stattdessen den Crawler-Zugriff (Onlineshop › Einstellungen › Crawler-Zugriff).",
   },
   "crawl-rate-limited": {
     title: "Crawl vorzeitig beendet: Anfragelimit",
     explanation:
       "Die Website hat mehrere Seiten in Folge mit 429 Too Many Requests abgelehnt oder den Crawler zu lange warten lassen. Der Crawl wurde deshalb abgebrochen. Dieser Bericht ist unvollständig; nicht abgerufene URLs sind weder als fehlerhaft noch als limitiert erfasst.",
     howToFix:
-      "Starten Sie das Audit erneut, sobald das Anfragelimit der Website zurückgesetzt ist, oder lassen Sie den OpenSEO-Audit-Crawler freigeben (https://openseo.so/docs/crawler). Bei Shopify nutzen Sie stattdessen den Crawler-Zugriff (Onlineshop › Einstellungen › Crawler-Zugriff).",
+      "Lassen Sie das Audit wiederholen, sobald das Anfragelimit der Website zurückgesetzt ist, oder nehmen Sie unseren Audit-Crawler von der Ratenbegrenzung aus. Bei Shopify erteilen Sie stattdessen den Crawler-Zugriff (Onlineshop › Einstellungen › Crawler-Zugriff).",
   },
   "server-error": {
     title: "Serverfehler (5xx)",
