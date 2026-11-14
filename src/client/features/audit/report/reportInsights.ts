@@ -1,5 +1,5 @@
 import { sortBy } from "remeda";
-import type { AuditResultsData } from "@/client/features/audit/results/types";
+import type { AuditReportData } from "@/client/features/audit/results/types";
 import type { getAuditReportContext } from "@/serverFunctions/audit";
 
 export type AuditReportContext = Awaited<
@@ -72,7 +72,7 @@ interface TypeProgress {
  * before: the two crawls rarely cover exactly the same pages.
  */
 export function compareWithPrevious(
-  data: AuditResultsData,
+  data: AuditReportData,
   previous: NonNullable<AuditReportContext["previous"]>,
 ) {
   const issueKey = (issue: { issueType: string; pageUrl: string }) =>

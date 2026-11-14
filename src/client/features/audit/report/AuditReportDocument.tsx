@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { isLighthouseFailure } from "@/client/features/audit/results/AuditResultsTableFilterLogic";
-import type { AuditResultsData } from "@/client/features/audit/results/types";
+import type { AuditReportData } from "@/client/features/audit/results/types";
 import {
   AiSection,
   ProgressSection,
@@ -40,17 +40,15 @@ import {
   REPORT_STRINGS,
   type ReportLanguage,
 } from "@/client/features/audit/report/reportStrings";
-import {
-  extractHostname,
-  parseTimestamp,
-} from "@/client/features/audit/shared";
+import { extractHostname } from "@/client/features/audit/shared";
+import { parseDbTimestamp } from "@/client/lib/db-timestamp";
 
 /**
  * The whole report as one self-contained HTML document, laid out for A4. The
  * caller opens it in a tab, where its own script calls print().
  */
 export function renderAuditReportHtml(args: {
-  data: AuditResultsData;
+  data: AuditReportData;
   /** The previous audit, search traffic and AI data; null if it failed to load. */
   context: AuditReportContext | null;
   language: ReportLanguage;
@@ -66,7 +64,7 @@ function AuditReport({
   language,
   fonts,
 }: {
-  data: AuditResultsData;
+  data: AuditReportData;
   context: AuditReportContext | null;
   language: ReportLanguage;
   fonts: { latin: string; latinExt: string };
@@ -74,9 +72,9 @@ function AuditReport({
   const t = REPORT_STRINGS[language];
   const { audit, pages, lighthouse, issues } = data;
   const host = extractHostname(audit.startUrl);
-  const auditedAt = parseTimestamp(audit.completedAt ?? audit.startedAt);
+  const auditedAt = parseDbTimestamp(audit.completedAt ?? audit.startedAt);
   const longDate = (value: string) =>
-    parseTimestamp(value).toLocaleDateString(t.locale, {
+    parseDbTimestamp(value).toLocaleDateString(t.locale, {
       day: "numeric",
       month: "long",
       year: "numeric",

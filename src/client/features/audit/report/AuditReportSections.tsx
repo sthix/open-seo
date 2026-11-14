@@ -1,6 +1,6 @@
 import { sortBy } from "remeda";
 import { isLighthouseFailure } from "@/client/features/audit/results/AuditResultsTableFilterLogic";
-import type { AuditResultsData } from "@/client/features/audit/results/types";
+import type { AuditReportData } from "@/client/features/audit/results/types";
 import {
   PerformanceCells,
   Section,
@@ -134,7 +134,7 @@ export function PerformanceSection({
   data: { lighthouse, pages },
   format: { t, path },
 }: {
-  data: AuditResultsData;
+  data: AuditReportData;
   format: ReportFormat;
 }) {
   if (lighthouse.length === 0) return null;
@@ -185,7 +185,7 @@ export function PagesSection({
   pages,
   format: { t, number, path },
 }: {
-  pages: AuditResultsData["pages"];
+  pages: AuditReportData["pages"];
   format: ReportFormat;
 }) {
   if (pages.length === 0) return null;

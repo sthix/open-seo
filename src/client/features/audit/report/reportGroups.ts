@@ -9,8 +9,11 @@ import {
   REPORT_STRINGS,
   type ReportLanguage,
 } from "@/client/features/audit/report/reportStrings";
-import { groupIssues } from "@/client/features/audit/results/IssuesView";
-import type { AuditResultsData } from "@/client/features/audit/results/types";
+import { resolveIssueSeverity } from "@/client/features/audit/results/IssuesView";
+import type {
+  AuditIssueRow,
+  AuditReportData,
+} from "@/client/features/audit/results/types";
 import {
   getIssueDescriptor,
   ISSUE_SEVERITY_ORDER,
@@ -29,6 +32,38 @@ export function reportIssueTitle(
   return german?.title ?? getIssueDescriptor(issueType)?.title ?? issueType;
 }
 
+/** The audit's issues by kind, each with every affected page. */
+function groupIssues(issues: AuditIssueRow[]) {
+  const groups = new Map<
+    string,
+    {
+      issueType: string;
+      severity: ReturnType<typeof resolveIssueSeverity>;
+      title: string;
+      explanation: string;
+      howToFix: string;
+      issues: AuditIssueRow[];
+    }
+  >();
+  for (const issue of issues) {
+    let group = groups.get(issue.issueType);
+    if (!group) {
+      const descriptor = getIssueDescriptor(issue.issueType);
+      group = {
+        issueType: issue.issueType,
+        severity: resolveIssueSeverity(issue),
+        title: descriptor?.title ?? issue.issueType,
+        explanation: descriptor?.explanation ?? "",
+        howToFix: descriptor?.howToFix ?? "",
+        issues: [],
+      };
+      groups.set(issue.issueType, group);
+    }
+    group.issues.push(issue);
+  }
+  return Array.from(groups.values());
+}
+
 export type ReportIssueGroup = ReturnType<typeof groupIssues>[number] & {
   /** Search traffic of the affected pages; null without Search Console. */
   traffic: PageTraffic | null;
@@ -40,7 +75,7 @@ export type ReportIssueGroup = ReturnType<typeof groupIssues>[number] & {
  * affected pages when it is known, then by how many pages are affected.
  */
 export function buildReportGroups(
-  issues: AuditResultsData["issues"],
+  issues: AuditReportData["issues"],
   language: ReportLanguage,
   traffic: TrafficLookup | null,
 ): ReportIssueGroup[] {

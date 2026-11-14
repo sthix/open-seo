@@ -11,8 +11,6 @@ import { SamSessionRepository } from "@/server/features/sam/SamSessionRepository
 import { runScheduledRankChecks } from "@/server/features/rank-tracking/services/scheduledRankChecks";
 import { reconcileStaleAudits } from "@/server/features/audit/services/auditReconciler";
 import { sendFirstAuditEmails } from "@/server/features/audit/services/firstAuditEmails";
-import { getOrCreateOrganizationCustomer } from "@/server/billing/subscription";
-import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
 import {
   getAuthMode,
   isHostedAuthMode,
@@ -26,14 +24,17 @@ import {
 import { requestWithPublicOrigin } from "@/server/mcp/public-origin";
 import { MCP_ROUTE } from "@/server/mcp/context";
 import { withPgClient } from "@/db";
+import { withDataforseoSlots } from "@/server/lib/dataforseo/request-slots";
 import {
   AUTUMN_WEBHOOK_PATH,
   handleAutumnWebhookRequest,
 } from "@/server/billing/autumn-webhook";
+import {
+  STRIPE_PROJECTS_PATH_PREFIX,
+  handleStripeProjectsRequest,
+} from "@/server/stripe-projects/handler";
 import { sweepDubReferredOrganizations } from "@/server/referrals/dub";
 import { maybeSendSelfHostHeartbeat } from "@/server/lib/self-host-telemetry";
-import { handleGdprStorageErasure } from "@/server/gdpr/storage-erasure";
-import { GDPR_STORAGE_ERASURE_PATH } from "@/shared/gdpr-erasure";
 import { handleOperatorRequest } from "@/server/standalone/admin";
 import { handleImport, isLegacyImportActive } from "@/server/standalone/import";
 import { hasOperatorSecret } from "@/server/standalone/operator-auth";
@@ -106,12 +107,6 @@ async function authorizeSamChat(
   if (!session || !project) {
     return new Response("Forbidden", { status: 403 });
   }
-  // Make sure the Autumn customer (and its default free-plan credits) exists
-  // before the DO's balance gate runs, or a brand-new org's first message hits
-  // a false "out of credits". Hosted-only; self-hosted has no Autumn.
-  if (await isHostedServerAuthMode()) {
-    await getOrCreateOrganizationCustomer(context);
-  }
   return undefined;
 }
 
@@ -146,7 +141,10 @@ function fetch(
 ): Promise<Response> {
   // Scope a per-request Postgres client (no-op in D1 mode). The client isn't
   // closed here — the Workers↔Hyperdrive socket is reclaimed at invocation end.
-  return withPgClient(() => Promise.resolve(handleFetch(request, env, ctx)));
+  // The DataForSEO cap is per request too, matching the connection limit.
+  return withPgClient(() =>
+    withDataforseoSlots(() => Promise.resolve(handleFetch(request, env, ctx))),
+  );
 }
 
 // AUTH_MODE=everyapp: OpenSEO is private behind an Every App gateway, which
@@ -215,16 +213,19 @@ async function handleAppRequest(
     );
   }
 
-  if (pathname === GDPR_STORAGE_ERASURE_PATH) {
-    return handleGdprStorageErasure(publicRequest, env);
-  }
-
   if (pathname.startsWith("/agents/")) {
     return routeChatAgents(publicRequest, env);
   }
 
   if (isHostedAuthMode(authMode) && pathname === AUTUMN_WEBHOOK_PATH) {
     return handleAutumnWebhookRequest(publicRequest);
+  }
+
+  if (
+    isHostedAuthMode(authMode) &&
+    pathname.startsWith(STRIPE_PROJECTS_PATH_PREFIX)
+  ) {
+    return handleStripeProjectsRequest(publicRequest);
   }
 
   if (usesBetterAuth(authMode)) {
@@ -307,6 +308,18 @@ export default {
           console.log("[retention] purged unused Google data", purged);
         } catch (err) {
           console.error("[cron] Google data cleanup failed:", err);
+        }
+
+        // Self-serve account deletions whose 14-day wait is over.
+        try {
+          const { AccountDeletionService } =
+            await import("@/server/account-deletion/AccountDeletionService");
+          const result = await withPgClient(() =>
+            AccountDeletionService.runDueDeletions(),
+          );
+          console.log("[account-deletion] daily run", result);
+        } catch (err) {
+          console.error("[cron] Account deletion run failed:", err);
         }
       }
       return;

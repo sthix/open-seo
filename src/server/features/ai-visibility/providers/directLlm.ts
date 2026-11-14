@@ -11,9 +11,13 @@ import { parseCitedAnswer, type ParsedAiAnswer } from "./dataforseoEvidence";
 // Asks each engine's own API with web search, using the operator's keys
 // instead of DataForSEO. Self-hosted only: hosted answers are billed through
 // DataForSEO. AI_VISIBILITY_DIRECT_ENGINES names the engines that use it, for
-// example "claude,perplexity,gemini". Google AI Overviews have no API.
+// example "claude,perplexity,gemini". Google AI Overviews and AI Mode have no
+// API.
 
-type DirectAiEngine = Exclude<AiEngine, "google_ai_overview">;
+type DirectAiEngine = Exclude<
+  AiEngine,
+  "google_ai_overview" | "google_ai_mode"
+>;
 
 const ENGINES = {
   chatgpt: { keyEnv: "OPENAI_API_KEY", modelEnv: "OPENAI_MODEL" },

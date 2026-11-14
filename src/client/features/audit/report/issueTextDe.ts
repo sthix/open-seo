@@ -1,4 +1,5 @@
 import type { AuditIssueType } from "@/shared/audit-issues";
+import { RENDERED_CRAWL_TIME_LIMIT_HOURS } from "@/shared/audit-limits";
 
 interface IssueText {
   title: string;
@@ -39,6 +40,26 @@ export const ISSUE_TEXT_DE: Record<AuditIssueType, IssueText> = {
       "Die Website hat mehrere Seiten in Folge mit 429 Too Many Requests abgelehnt oder den Crawler zu lange warten lassen. Der Crawl wurde deshalb abgebrochen. Dieser Bericht ist unvollständig; nicht abgerufene URLs sind weder als fehlerhaft noch als limitiert erfasst.",
     howToFix:
       "Lassen Sie das Audit wiederholen, sobald das Anfragelimit der Website zurückgesetzt ist, oder nehmen Sie unseren Audit-Crawler von der Ratenbegrenzung aus. Bei Shopify erteilen Sie stattdessen den Crawler-Zugriff (Onlineshop › Einstellungen › Crawler-Zugriff).",
+  },
+  "crawl-time-limit": {
+    title: "Crawl vorzeitig beendet: Zeitlimit",
+    explanation: `Audits mit JavaScript-Rendering beenden den Crawl nach ${RENDERED_CRAWL_TIME_LIMIT_HOURS} Stunden, und dieses Audit hat dieses Limit erreicht. Dieser Bericht ist unvollständig; nicht abgerufene URLs sind nicht als fehlerhaft erfasst.`,
+    howToFix:
+      "Lassen Sie das Audit mit einem niedrigeren Seitenlimit wiederholen, oder ohne JavaScript-Rendering, wenn Inhalte und Links der Website bereits im HTML stehen.",
+  },
+  "crawl-credits-exhausted": {
+    title: "Crawl vorzeitig beendet: Kostenlimit erreicht",
+    explanation:
+      "Viele Seiten dieser Website brauchten das aufwendigere Rendering, deshalb hat das Audit sein Kostenlimit erreicht und den Crawl beendet. Dieser Bericht ist unvollständig.",
+    howToFix:
+      "Wenn die Website ihre Inhalte auch ohne JavaScript zeigt, lassen Sie das Audit ohne JavaScript-Rendering wiederholen.",
+  },
+  "crawl-page-limit": {
+    title: "Crawl vorzeitig beendet: Seitenlimit",
+    explanation:
+      "Das Audit hat sein Seitenlimit erreicht, bevor alle gefundenen URLs besucht waren. Dieser Bericht deckt daher nur einen Teil der Website ab; verwaiste Seiten werden bei einem unvollständigen Crawl nicht geprüft.",
+    howToFix:
+      "Lassen Sie das Audit mit einem höheren Seitenlimit wiederholen. Ist das Maximum schon erreicht, schließen Sie Bereiche, die nicht geprüft werden müssen (etwa Tag-Archive oder gefilterte Listen), per robots.txt für unseren Audit-Crawler aus, damit das Limit den wichtigen Seiten zugutekommt.",
   },
   "server-error": {
     title: "Serverfehler (5xx)",

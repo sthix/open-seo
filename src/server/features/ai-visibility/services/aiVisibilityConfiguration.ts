@@ -3,6 +3,7 @@ import { parseBrandAliases } from "@/shared/brand-aliases";
 import type { AiTrackerPatch } from "@/types/schemas/ai-visibility";
 import {
   AI_DEFAULT_TOPIC,
+  ownBrandName,
   type AiBrand,
   type AiEngine,
 } from "@/shared/ai-visibility";
@@ -23,6 +24,7 @@ export function trackerEngines(tracker: TrackerRow): AiEngine[] {
     ...(tracker.chatgpt ? (["chatgpt"] as const) : []),
     ...(tracker.gemini ? (["gemini"] as const) : []),
     ...(tracker.googleAiOverview ? (["google_ai_overview"] as const) : []),
+    ...(tracker.googleAiMode ? (["google_ai_mode"] as const) : []),
     ...(tracker.claude ? (["claude"] as const) : []),
     ...(tracker.perplexity ? (["perplexity"] as const) : []),
   ];
@@ -33,6 +35,7 @@ function engineColumns(engines: AiEngine[]) {
     chatgpt: engines.includes("chatgpt"),
     gemini: engines.includes("gemini"),
     googleAiOverview: engines.includes("google_ai_overview"),
+    googleAiMode: engines.includes("google_ai_mode"),
     claude: engines.includes("claude"),
     perplexity: engines.includes("perplexity"),
   };
@@ -70,6 +73,7 @@ export function aiScope(config: ConfigurationRows, promptIds?: string[]) {
 export function aiBrands(
   project: {
     name: string;
+    brandName: string | null;
     domain: string | null;
     brandAliases?: string | null;
   },
@@ -84,7 +88,7 @@ export function aiBrands(
     [
       project.domain,
       {
-        name: project.name,
+        name: ownBrandName(project),
         domain: project.domain,
         own: true,
         aliases: parseBrandAliases(project.brandAliases ?? null),
@@ -94,7 +98,8 @@ export function aiBrands(
   for (const c of competitors)
     if (!brands.has(c.domain))
       brands.set(c.domain, {
-        name: c.name ?? c.domain,
+        // The settings form saves a blank name as "" so it can clear a stored one.
+        name: c.name || c.domain,
         domain: c.domain,
         own: false,
         aliases: parseBrandAliases(c.aliases ?? null),

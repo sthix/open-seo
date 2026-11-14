@@ -2,9 +2,15 @@ import { toast } from "sonner";
 import interLatinExt from "@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2?url";
 import interLatin from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
 import type { ReportLanguage } from "@/client/features/audit/report/reportStrings";
+import { fetchAllRows } from "@/client/features/audit/results/export";
 import type { AuditResultsData } from "@/client/features/audit/results/types";
 import { captureClientEvent } from "@/client/lib/posthog";
-import { getAuditReportContext } from "@/serverFunctions/audit";
+import {
+  getAuditIssues,
+  getAuditPages,
+  getAuditReportContext,
+} from "@/serverFunctions/audit";
+import { AUDIT_ROWS_MAX_PAGE_SIZE } from "@/types/schemas/audit";
 
 /**
  * Opens the audit as a print-ready report in a new tab, which then opens the
@@ -17,7 +23,8 @@ export async function exportAuditReport(args: {
   /** Off skips the backlink lookups, which cost credits. */
   includeBacklinks: boolean;
 }) {
-  const { projectId, data, language, includeBacklinks } = args;
+  const { projectId, data: summary, language, includeBacklinks } = args;
+  const ref = { projectId, auditId: summary.audit.id };
   // Opened inside the click, before any await, or the popup blocker stops it.
   const tab = window.open("", "_blank");
   if (!tab) {
@@ -27,16 +34,30 @@ export async function exportAuditReport(args: {
 
   try {
     // The report and its German texts load only when someone exports one.
-    const [{ renderAuditReportHtml }, context] = await Promise.all([
-      import("@/client/features/audit/report/AuditReportDocument"),
-      // Without it the report still prints, just without the comparison,
-      // search traffic and AI crawler access.
-      getAuditReportContext({
-        data: { projectId, auditId: data.audit.id, includeBacklinks },
-      }).catch(() => null),
-    ]);
+    // The results page loads issues and pages a page at a time; the report
+    // lists them all, so it loads every row here.
+    const [{ renderAuditReportHtml }, context, issues, pages] =
+      await Promise.all([
+        import("@/client/features/audit/report/AuditReportDocument"),
+        // Without it the report still prints, just without the comparison,
+        // search traffic and AI crawler access.
+        getAuditReportContext({
+          data: { ...ref, includeBacklinks },
+        }).catch(() => null),
+        fetchAllRows((page) =>
+          getAuditIssues({
+            data: { ...ref, page, pageSize: AUDIT_ROWS_MAX_PAGE_SIZE },
+          }),
+        ),
+        fetchAllRows(async (page) => {
+          const result = await getAuditPages({
+            data: { ...ref, page, pageSize: AUDIT_ROWS_MAX_PAGE_SIZE },
+          });
+          return result.rows;
+        }),
+      ]);
     const html = renderAuditReportHtml({
-      data,
+      data: { ...summary, issues, pages },
       context,
       language,
       fonts: {
@@ -59,6 +80,6 @@ export async function exportAuditReport(args: {
     format: "pdf",
     language,
     include_backlinks: includeBacklinks,
-    result_count: data.issues.length,
+    result_count: summary.issueCount,
   });
 }
