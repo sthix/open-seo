@@ -18,6 +18,7 @@ describe("buildSamSkillSource", () => {
       "keyword-research",
       "link-prospecting",
       "local-seo",
+      "reverse-engineer-seo",
       "seo-audit",
       "seo-coach",
       "seo-project-setup",

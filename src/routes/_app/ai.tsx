@@ -61,6 +61,11 @@ const SKILLS = [
     "competitor-analysis",
     "Studies one competitor's keywords, content, and backlinks.",
   ],
+  [
+    "reverse-engineer-seo",
+    "Shows how any site earns its Google traffic and which moves to copy. Ask SAM, or install it from SEO.party.",
+    "https://github.com/every-app/seo-party-skills/tree/main/skills/reverse-engineer-seo",
+  ],
   ["link-prospecting", "Finds link prospects and drafts outreach."],
   ["local-seo", "Audits a Google Business Profile and Maps visibility."],
   ["seo-report", "Saves any of the above as a report on your Reports page."],
@@ -246,13 +251,13 @@ function AiPage() {
                 answer.
               </p>
               <ul className="mt-5 space-y-3 text-sm sm:space-y-2">
-                {SKILLS.map(([name, blurb]) => (
+                {SKILLS.map(([name, blurb, href]) => (
                   <li
                     key={name}
                     className="flex flex-col gap-0.5 sm:flex-row sm:gap-3"
                   >
                     <a
-                      href={`https://openseo.so/docs/skills/${name}`}
+                      href={href ?? `https://openseo.so/docs/skills/${name}`}
                       target="_blank"
                       rel="noreferrer"
                       className={`shrink-0 font-mono text-[13px] sm:w-48 ${LINK_CLASS}`}
