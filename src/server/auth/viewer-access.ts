@@ -28,7 +28,9 @@ const VIEWER_READABLE: Record<string, readonly string[]> = {
   ],
   "src/serverFunctions/audit.ts": [
     "getAuditStatus",
-    "getAuditResults",
+    "getAuditSummary",
+    "getAuditPages",
+    "getAuditIssues",
     "getAuditHistory",
     "getCrawlProgress",
     "getAuditCapabilities",

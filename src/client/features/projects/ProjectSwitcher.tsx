@@ -19,6 +19,7 @@ import {
 import { Button } from "@/client/components/ui/button";
 import { Separator } from "@/client/components/ui/separator";
 import { Skeleton } from "@/client/components/ui/skeleton";
+import { LOCATIONS } from "@/shared/keyword-locations";
 import type { ProjectSummary } from "./types";
 
 const SEARCH_THRESHOLD = 8;
@@ -28,6 +29,20 @@ function matchesProject(project: ProjectSummary, query: string) {
   return (
     project.name.toLowerCase().includes(needle) ||
     Boolean(project.domain?.toLowerCase().includes(needle))
+  );
+}
+
+function sharesDomainAcrossCountries(
+  project: ProjectSummary,
+  projects: ProjectSummary[],
+) {
+  return (
+    project.domain !== null &&
+    projects.some(
+      (other) =>
+        other.domain === project.domain &&
+        other.locationCode !== project.locationCode,
+    )
   );
 }
 
@@ -170,6 +185,12 @@ export function ProjectSwitcher({
                     </span>
                   ) : null}
                 </span>
+                {sharesDomainAcrossCountries(project, projects) &&
+                LOCATIONS[project.locationCode] ? (
+                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                    {LOCATIONS[project.locationCode]}
+                  </span>
+                ) : null}
               </ComboboxItem>
             )}
           </ComboboxList>

@@ -91,6 +91,8 @@ async function completeAudit(
     pagesTotal: number;
   },
 ) {
+  // Like failAudit, only a running audit can finish: a reconciler that already
+  // failed it keeps its error instead of showing "completed" beside it.
   await db
     .update(audits)
     .set({
@@ -103,6 +105,7 @@ async function completeAudit(
       and(
         eq(audits.id, auditId),
         eq(audits.workflowInstanceId, workflowInstanceId),
+        eq(audits.status, "running"),
       ),
     );
 }
@@ -370,25 +373,14 @@ async function getAuditUsageForOrganization(organizationId: string) {
   };
 }
 
-async function getAuditResultsForProject(auditId: string, projectId: string) {
-  const audit = await getAuditForProject(auditId, projectId);
-  if (!audit) {
-    return { audit: null, pages: [], lighthouse: [], issues: [] };
-  }
-
-  const [pages, lighthouse, issues] = await Promise.all([
-    db.query.auditPages.findMany({
-      where: eq(auditPages.auditId, auditId),
-    }),
-    db.query.auditLighthouseResults.findMany({
-      where: eq(auditLighthouseResults.auditId, auditId),
-    }),
-    db.query.auditIssues.findMany({
-      where: eq(auditIssues.auditId, auditId),
-    }),
-  ]);
-
-  return { audit, pages, lighthouse, issues };
+async function hasAuditInOrganization(organizationId: string) {
+  const rows = await db
+    .select({ id: audits.id })
+    .from(audits)
+    .innerJoin(projects, eq(audits.projectId, projects.id))
+    .where(eq(projects.organizationId, organizationId))
+    .limit(1);
+  return rows.length > 0;
 }
 
 async function getLighthouseResultById(input: {
@@ -451,7 +443,7 @@ export const AuditRepository = {
   hasPagesForAudit,
   getAuditsByProject,
   getAuditUsageForOrganization,
-  getAuditResultsForProject,
+  hasAuditInOrganization,
   getLighthouseResultById,
   deleteAuditForProject,
 } as const;

@@ -1,6 +1,10 @@
 import { sort } from "remeda";
 import { parse } from "tldts";
-import type { AiBrand } from "@/shared/ai-visibility";
+import {
+  aiBrandLabel,
+  isDefaultProjectName,
+  type AiBrand,
+} from "@/shared/ai-visibility";
 import type { ParsedAiAnswer } from "../providers/dataforseoEvidence";
 
 export function ownedAiDomain(hostname: string, owned: string): boolean {
@@ -70,7 +74,7 @@ function rootDomainName(value: string) {
     : null;
 }
 
-type MatchableBrand = Pick<AiBrand, "name" | "domain"> &
+type MatchableBrand = Pick<AiBrand, "name" | "domain" | "own"> &
   Partial<Pick<AiBrand, "aliases">>;
 
 /**
@@ -78,8 +82,9 @@ type MatchableBrand = Pick<AiBrand, "name" | "domain"> &
  * "acme.com" is written "Acme".
  */
 export function aiBrandNames(brand: MatchableBrand) {
-  const stem = rootDomainName(brand.name);
-  const names = [brand.name, brand.domain, ...(brand.aliases ?? [])];
+  const name = aiBrandLabel(brand);
+  const stem = rootDomainName(name);
+  const names = [name, brand.domain, ...(brand.aliases ?? [])];
   return stem && stem === rootDomainName(brand.domain)
     ? [...names, stem]
     : names;
@@ -101,12 +106,16 @@ export function matchAiBrand(answer: ParsedAiAnswer, brand: MatchableBrand) {
   };
 }
 
-/** Prompt cohorts must include diagnostics that name the brand only by URL. */
+/** The project's own brand. Prompt cohorts must include diagnostics that name it only by URL. */
 export function aiPromptIsBranded(
   prompt: string,
-  brand: MatchableBrand,
+  brand: Pick<AiBrand, "name" | "domain"> & Partial<Pick<AiBrand, "aliases">>,
 ): boolean {
-  if (aiMentionSpans(prompt, [brand.name, ...(brand.aliases ?? [])]).length)
+  if (
+    (!isDefaultProjectName(brand.name) &&
+      aiMentionSpans(prompt, [brand.name]).length) ||
+    aiMentionSpans(prompt, brand.aliases ?? []).length
+  )
     return true;
   const domain = brand.domain
     .replace(/^www\./i, "")

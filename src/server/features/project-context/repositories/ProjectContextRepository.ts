@@ -49,6 +49,22 @@ function chunk<T>(items: T[], size: number): T[][] {
   return out;
 }
 
+async function getBrandName(projectId: string) {
+  const [row] = await db
+    .select({ brandName: projects.brandName })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
+  return row?.brandName ?? null;
+}
+
+function setBrandName(tx: Tx, projectId: string, brandName: string | null) {
+  return tx
+    .update(projects)
+    .set({ brandName })
+    .where(eq(projects.id, projectId));
+}
+
 async function listSections(projectId: string) {
   return db
     .select()
@@ -286,6 +302,8 @@ function pruneResearchLogBefore(tx: Tx, projectId: string, entryDate: string) {
 }
 
 export const ProjectContextRepository = {
+  getBrandName,
+  setBrandName,
   listSections,
   upsertSection,
   deleteSection,

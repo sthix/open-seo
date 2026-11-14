@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { sortBy } from "remeda";
-import type { AuditResultsData } from "@/client/features/audit/results/types";
+import type { AuditReportData } from "@/client/features/audit/results/types";
 import type { ReportFormat } from "@/client/features/audit/report/reportFormat";
 import type { ReportIssueGroup } from "@/client/features/audit/report/reportGroups";
 import {
@@ -96,7 +96,7 @@ export function ProgressSection({
   previous,
   format: { t, ti, number, date, issueTitle },
 }: {
-  data: AuditResultsData;
+  data: AuditReportData;
   previous: AuditReportContext["previous"];
   format: ReportFormat;
 }) {
@@ -189,7 +189,7 @@ export function AiSection({
   context,
   format: { t, ti, number },
 }: {
-  data: AuditResultsData;
+  data: AuditReportData;
   context: AuditReportContext | null;
   format: ReportFormat;
 }) {

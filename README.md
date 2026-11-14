@@ -16,6 +16,12 @@ Try OpenSEO for free on our website. If you want to support the project, a hoste
 
 [openseo.so](https://openseo.so)
 
+### EveryApp
+
+Host OpenSEO and other open source apps on our platform EveryApp.
+
+[Self-host on EveryApp and give it a star →](https://github.com/every-app/every-app)
+
 ## Why use OpenSEO?
 
 - Best in class MCP and AI Skills.
@@ -76,7 +82,7 @@ See [`docs/LOCAL_DEVELOPMENT.md`](./docs/LOCAL_DEVELOPMENT.md).
 
 Creating clear issues is the best way to contribute.
 
-Read more here: [`docs/CONTRIBUTING.md`](./docs/CONTRIBUTING.md)
+Read more here: [`.github/CONTRIBUTING.md`](./.github/CONTRIBUTING.md)
 
 We have this skill: `/simple-issue-description` which helps.
 

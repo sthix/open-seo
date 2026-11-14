@@ -22,7 +22,7 @@ declare namespace Cloudflare {
     AUDIT_SCRATCHPAD: DurableObjectNamespace;
 
     // Service binding to the audit worker's AuditEngine entrypoint (cancel +
-    // GDPR erasure of scratchpad state). The inline import() is required: a
+    // account-deletion erasure of scratchpad state). The inline import() is required: a
     // top-level import would turn this ambient file into a module and break
     // the global augmentation.
     // oxlint-disable-next-line typescript-eslint/consistent-type-imports
@@ -54,6 +54,10 @@ declare namespace Cloudflare {
     EVERYAPP_AUDIENCE?: string;
     TEAM_DOMAIN?: string;
     POLICY_AUD?: string;
+    // Flagship app holding our feature flags (src/server/lib/featureFlags.ts).
+    // Bound only on hosted production; everywhere else every flag reads off.
+    // oxlint-disable-next-line typescript-eslint/consistent-type-imports
+    FLAGS?: import("@cloudflare/workers-types").Flagship;
     POSTHOG_PUBLIC_KEY?: string;
     POSTHOG_HOST?: string;
     BETTER_AUTH_SECRET?: string;
@@ -64,6 +68,9 @@ declare namespace Cloudflare {
     // Private Ed25519 JWK that signs site audit requests (Web Bot Auth). Hosted
     // only; unset sends unsigned requests.
     WEB_BOT_AUTH_JWK?: string;
+    // Stripe App signing secret that authenticates Stripe Projects
+    // provisioning requests (hosted only). Unset turns the provider off.
+    STRIPE_PROJECTS_SIGNING_SECRET?: string;
     DATABASE_PROVIDER?: "d1" | "postgres";
     HYPERDRIVE?: {
       connectionString: string;
@@ -71,6 +78,11 @@ declare namespace Cloudflare {
     GOOGLE_CLIENT_ID?: string;
     GOOGLE_CLIENT_SECRET?: string;
     GOOGLE_MAPS_API_KEY?: string;
+    // Sign in with ChatGPT (hosted only, optional). The client ID is public
+    // and inlined into the client build, which shows the button only when it
+    // is set. Only a client OpenAI registered as confidential has a secret.
+    OPENAI_SIWC_CLIENT_ID?: string;
+    OPENAI_SIWC_CLIENT_SECRET?: string;
     LOOPS_API_KEY?: string;
     LOOPS_TRANSACTIONAL_VERIFY_EMAIL_ID?: string;
     LOOPS_TRANSACTIONAL_RESET_PASSWORD_ID?: string;
@@ -87,8 +99,12 @@ declare namespace Cloudflare {
     // unless both are set.
     META_PIXEL_ID?: string;
     META_CONVERSIONS_API_TOKEN?: string;
-    // HMAC secret for the operator-only GDPR storage-erasure endpoint.
-    GDPR_ERASURE_SECRET?: string;
+    // Self-serve account deletion (hosted only): the Loops template that
+    // confirms the request, and a PostHog personal API key (person read and
+    // write) with its project ID to delete the person's analytics.
+    LOOPS_TRANSACTIONAL_ACCOUNT_DELETION_ID?: string;
+    POSTHOG_PROJECT_ID?: string;
+    POSTHOG_ACCOUNT_DELETION_API_KEY?: string;
 
     // Cloudflare Turnstile — signup captcha (hosted only). Secret verifies
     // tokens server-side; site key is public and inlined into the client build.
@@ -119,6 +135,8 @@ declare namespace Cloudflare {
 
     // OpenRouter API key for the SAM in-app chat agent.
     OPENROUTER_API_KEY?: string;
+    // Optional base URL to use another OpenRouter-compatible provider.
+    OPENROUTER_BASE_URL?: string;
     // Optional OpenRouter model slug override (defaults in openrouter.ts).
     OPENROUTER_MODEL?: string;
     // Self-hosted only: Mistral's EU-hosted API instead of OpenRouter for SAM
@@ -157,6 +175,7 @@ interface ImportMetaEnv {
   readonly POSTHOG_PUBLIC_KEY?: string;
   readonly POSTHOG_HOST?: string;
   readonly TURNSTILE_SITE_KEY?: string;
+  readonly OPENAI_SIWC_CLIENT_ID?: string;
   readonly VITE_E2E_DOMAIN_FIXTURES?: string;
   readonly VITE_E2E_KEYWORD_FIXTURES?: string;
   readonly VITE_OPENSEO_LEGACY_DOCKER?: string;

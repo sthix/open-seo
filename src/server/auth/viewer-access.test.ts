@@ -72,6 +72,6 @@ describe("viewer server function access", () => {
           !ownPreferences.includes(name),
       ),
     ).toEqual([]);
-    expect(opened).toHaveLength(64);
+    expect(opened).toHaveLength(66);
   });
 });
