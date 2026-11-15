@@ -1,28 +1,6 @@
-import { Link, useLocation, useMatchRoute } from "@tanstack/react-router";
-import type { LinkOptions } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState, type ComponentType } from "react";
-import { toast } from "sonner";
+import { Link, useLocation } from "@tanstack/react-router";
 import { cn } from "@/client/boardui/utils/cx";
-import {
-  ArrowLeftRight,
-  Check,
-  ChevronsUpDown,
-  ChevronLeft,
-  CircleHelp,
-  CreditCard,
-  Gauge,
-  LogOut,
-  Plus,
-  Settings,
-  User,
-} from "lucide-react";
-import {
-  organizationContextQueryOptions,
-  useIsReadOnlyViewer,
-} from "@/client/features/team/organizationQueries";
-import { switchOrganization } from "@/serverFunctions/organization";
-import { clearLastProjectId } from "@/client/lib/active-project";
+import { useIsReadOnlyViewer } from "@/client/features/team/organizationQueries";
 import {
   connectNavGroup,
   getProjectNavGroups,
@@ -32,100 +10,22 @@ import {
   SamChatListSkeleton,
   SamSidebarPanel,
 } from "@/client/features/sam/SamSidebarPanel";
-import { ThemePreferenceRadio } from "@/client/components/ThemePreferenceMenuItems";
-import { getStandardErrorMessage } from "@/client/lib/error-messages";
-import { signOutAndRedirect, useSession } from "@/lib/auth-client";
-import {
-  getClientAuthMode,
-  isEveryAppClientAuthMode,
-  isHostedClientAuthMode,
-} from "@/lib/auth-mode";
-import { hasOrgPermission } from "@/lib/org-permissions";
-import { CreateCustomerWorkspaceModal } from "@/client/features/team/CreateCustomerWorkspaceModal";
-import { everyAppAccountQueryOptions } from "@/client/features/every-app/everyAppAccountQueries";
-import { BILLING_ROUTE } from "@/shared/billing";
 import {
   Sidebar as UiSidebar,
   SidebarContent,
-  SidebarFooter as UiSidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSkeleton,
   useSidebar,
 } from "@/client/components/ui/sidebar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/client/components/ui/dropdown-menu";
-
-const navButtonClass = "relative";
-
-function SidebarNavLink({
-  icon: Icon,
-  label,
-  linkProps,
-  placeholder = false,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  linkProps: LinkOptions;
-  /** Show the row without its link, while its project is still unknown. */
-  placeholder?: boolean;
-}) {
-  const { setOpenMobile } = useSidebar();
-  const matchRoute = useMatchRoute();
-  const isPromptHistory =
-    linkProps.to === "/p/$projectId/ai-visibility" &&
-    Boolean(
-      matchRoute({
-        to: "/p/$projectId/ai-visibility/prompts/$promptId",
-        fuzzy: true,
-      }),
-    );
-  const row = (isActive: boolean) => (
-    <SidebarMenuButton
-      render={<span />}
-      isActive={isActive}
-      aria-disabled={placeholder || undefined}
-      className={navButtonClass}
-    >
-      <Icon className="size-[18px]" />
-      <span>{label}</span>
-    </SidebarMenuButton>
-  );
-  return (
-    <SidebarMenuItem>
-      {placeholder ? (
-        row(false)
-      ) : (
-        <Link
-          {...linkProps}
-          activeOptions={{
-            exact: false,
-            includeSearch: false,
-            ...linkProps.activeOptions,
-          }}
-          onClick={() => setOpenMobile(false)}
-          inactiveProps={
-            isPromptHistory ? { "aria-current": "page" } : undefined
-          }
-        >
-          {({ isActive }) => row(isActive || isPromptHistory)}
-        </Link>
-      )}
-    </SidebarMenuItem>
-  );
-}
+  AccountFooter,
+  EveryAppLink,
+  everyApp,
+  SidebarNavLink,
+} from "@/client/components/SidebarAccountFooter";
 
 export function Sidebar({
   projectId,
@@ -226,221 +126,5 @@ export function Sidebar({
       </SidebarContent>
       <AccountFooter ready={ready} />
     </UiSidebar>
-  );
-}
-
-// Behind an Every App gateway, which owns sign-in, organizations, teams and
-// billing: the sidebar's first row links back to the gateway, and the footer
-// holds help and OpenSEO settings.
-const everyApp = isEveryAppClientAuthMode();
-
-// An agency running OpenSEO next to its own dashboard links to it from here.
-const agencyDashboardUrl = import.meta.env.VITE_AGENCY_DASHBOARD_URL;
-
-/**
- * The way back up, first in the sidebar as in every Every App app. The row
- * keeps its height while the gateway's URL loads so the header doesn't jump.
- */
-function EveryAppLink() {
-  const accountQuery = useQuery(everyAppAccountQueryOptions());
-  const gatewayUrl = accountQuery.data?.gatewayUrl;
-  if (!accountQuery.isPending && !gatewayUrl) return null;
-  return (
-    <a
-      href={gatewayUrl ?? undefined}
-      aria-label="Back to Every App"
-      className={cn(
-        "mb-1 inline-flex h-7 w-fit items-center gap-0.5 rounded-2lg ps-0.5 pe-2 text-body-medium text-text-secondary transition-colors hover:text-text-primary",
-        accountQuery.isPending && "invisible",
-      )}
-    >
-      <ChevronLeft className="size-4" aria-hidden />
-      <span>Every App</span>
-    </a>
-  );
-}
-
-function AccountFooter({ ready }: { ready: boolean }) {
-  const { data: session } = useSession();
-  const { setOpenMobile } = useSidebar();
-  const everyAppAccountQuery = useQuery({
-    ...everyAppAccountQueryOptions(),
-    enabled: everyApp,
-  });
-  const email = everyApp
-    ? everyAppAccountQuery.data?.email
-    : session?.user?.email;
-  const [isSwitching, setIsSwitching] = useState(false);
-  const [creatingWorkspace, setCreatingWorkspace] = useState(false);
-  const orgContextQuery = useQuery({
-    ...organizationContextQueryOptions(),
-    enabled: Boolean(email) && !everyApp,
-  });
-  const organizations = everyApp
-    ? []
-    : (orgContextQuery.data?.organizations ?? []);
-  const activeOrganizationId = orgContextQuery.data?.organizationId;
-  const canCreateWorkspace =
-    getClientAuthMode() === "password" &&
-    Boolean(
-      orgContextQuery.data &&
-      hasOrgPermission(orgContextQuery.data.role, { billing: ["manage"] }),
-    );
-
-  async function handleSwitchOrganization(organizationId: string) {
-    if (isSwitching || organizationId === activeOrganizationId) return;
-    setIsSwitching(true);
-    try {
-      await switchOrganization({ data: { organizationId } });
-      // The remembered project belongs to the old workspace; without this,
-      // "/" would open it before the access check bounces back.
-      clearLastProjectId();
-      window.location.assign("/");
-    } catch (error) {
-      toast.error(getStandardErrorMessage(error));
-      setIsSwitching(false);
-    }
-  }
-
-  return (
-    <UiSidebarFooter className="gap-0 pb-safe">
-      <SidebarMenu>
-        {agencyDashboardUrl ? (
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={<a href={agencyDashboardUrl} />}
-              className={navButtonClass}
-            >
-              <Gauge className="size-[18px]" />
-              <span>Cited dashboard</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ) : null}
-        <SidebarNavLink
-          icon={CircleHelp}
-          label="Help & Community"
-          linkProps={{ to: "/support" }}
-        />
-        {everyApp ? (
-          <SidebarNavLink
-            icon={Settings}
-            label="Settings"
-            linkProps={{ to: "/settings" }}
-          />
-        ) : email ? (
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <SidebarMenuButton
-                    size="lg"
-                    className="mt-1 h-11 rounded-xl bg-background-tertiary-default ps-3 pe-3 text-text-primary hover:bg-background-tertiary-hover data-open:bg-background-tertiary-hover"
-                    aria-label="Open account menu"
-                  />
-                }
-              >
-                <User className="size-4" />
-                <span
-                  className="min-w-0 flex-1 truncate text-body-medium text-text-primary"
-                  data-ph-mask
-                >
-                  {email}
-                </span>
-                <ChevronsUpDown className="size-4! text-text-secondary" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="top" className="w-56">
-                {organizations.length > 1 ? (
-                  <>
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel className="flex items-center gap-1.5">
-                        <ArrowLeftRight className="size-3" />
-                        Organization
-                      </DropdownMenuLabel>
-                      {organizations.map((organization) => (
-                        <DropdownMenuItem
-                          key={organization.organizationId}
-                          disabled={isSwitching}
-                          onClick={() =>
-                            void handleSwitchOrganization(
-                              organization.organizationId,
-                            )
-                          }
-                        >
-                          <span className="truncate">
-                            {organization.organizationName}
-                          </span>
-                          {organization.organizationId ===
-                          activeOrganizationId ? (
-                            <Check className="ml-auto size-4" />
-                          ) : null}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuGroup>
-                    <DropdownMenuSeparator />
-                  </>
-                ) : null}
-                {canCreateWorkspace ? (
-                  <DropdownMenuItem onClick={() => setCreatingWorkspace(true)}>
-                    <Plus className="size-4" />
-                    New customer workspace
-                  </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuItem
-                  render={
-                    <Link to="/settings" onClick={() => setOpenMobile(false)} />
-                  }
-                >
-                  <Settings className="size-4" />
-                  Settings
-                </DropdownMenuItem>
-                {isHostedClientAuthMode() ? (
-                  <DropdownMenuItem
-                    render={
-                      <Link
-                        to={BILLING_ROUTE}
-                        onClick={() => setOpenMobile(false)}
-                      />
-                    }
-                  >
-                    <CreditCard className="size-4" />
-                    Billing
-                  </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Theme</DropdownMenuLabel>
-                  <div className="px-1 pb-1">
-                    <ThemePreferenceRadio />
-                  </div>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => signOutAndRedirect()}
-                >
-                  <LogOut className="size-4" />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        ) : ready ? (
-          <SidebarNavLink
-            icon={Settings}
-            label="Settings"
-            linkProps={{ to: "/settings" }}
-          />
-        ) : (
-          // The account row's slot while the session loads.
-          <SidebarMenuItem>
-            <SidebarMenuSkeleton showIcon />
-          </SidebarMenuItem>
-        )}
-      </SidebarMenu>
-      {creatingWorkspace ? (
-        <CreateCustomerWorkspaceModal
-          onClose={() => setCreatingWorkspace(false)}
-        />
-      ) : null}
-    </UiSidebarFooter>
   );
 }

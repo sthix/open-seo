@@ -1,10 +1,4 @@
-import {
-  generateText,
-  NoObjectGeneratedError,
-  Output,
-  stepCountIs,
-  tool,
-} from "ai";
+import { generateText, Output, stepCountIs, tool } from "ai";
 import { z } from "zod";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
 import {
@@ -43,47 +37,13 @@ import {
 import { ownBrandName } from "@/shared/ai-visibility";
 import { ProjectContextRepository } from "@/server/features/project-context/repositories/ProjectContextRepository";
 import { AiVisibilityRepository } from "@/server/features/ai-visibility/repositories/AiVisibilityRepository";
-
-const SEARCH_RETRIES = 3;
-// Time the competitor search may spend on retries. A failing DataForSEO
-// search can take about 20 seconds per attempt, so retrying all of them would
-// spend most of the research deadline and the whole setup would time out.
-// Once the budget is spent, the search counts as an outage and research goes
-// on without competitors.
-const SEARCH_RETRY_BUDGET_MS = 30_000;
-const OUTPUT_RETRIES = 2;
-
-// DataForSEO's own search backend failing (e.g. 40101), not a problem with our
-// request or account.
-function isSearchOutage(error: unknown): error is AppError {
-  return error instanceof AppError && error.code === "UPSTREAM_UNAVAILABLE";
-}
-
-// The model occasionally ends with text that isn't valid JSON. One deadline
-// covers every attempt so retries stay inside the research-setup step.
-async function retryInvalidOutput<T>(
-  generate: (abortSignal: AbortSignal) => Promise<T>,
-  deadlineMs: number,
-) {
-  const abortSignal = AbortSignal.timeout(deadlineMs);
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await generate(abortSignal);
-    } catch (error) {
-      // The deadline aborts mid-request with a bare TimeoutError.
-      if (abortSignal.aborted)
-        throw new AppError(
-          "INTERNAL_ERROR",
-          "Website research took too long. Please try again.",
-        );
-      if (
-        attempt === OUTPUT_RETRIES ||
-        !NoObjectGeneratedError.isInstance(error)
-      )
-        throw error;
-    }
-  }
-}
+import { researchOutputSchema } from "./websiteResearchOutput";
+import {
+  isSearchOutage,
+  retryInvalidOutput,
+  SEARCH_RETRIES,
+  SEARCH_RETRY_BUDGET_MS,
+} from "./websiteResearchRetries";
 
 type ResearchedProject = {
   id: string;
@@ -197,39 +157,13 @@ async function researchWebsiteAttempt(
   const sources = new Set<string>();
   let searchSucceeded = false;
   let searchOutage = false;
-  const outputSchema = z.object({
-    ...(project.brandName ? {} : { name: websiteResearchSchema.shape.name }),
-    ...(missingOverview
-      ? { overview: websiteResearchSchema.shape.overview.max(3500) }
-      : {}),
-    ...(missingCompetitors
-      ? {
-          competitors: z
-            .array(
-              websiteResearchSchema.shape.competitors.element.extend({
-                // Validate URI format after generation; structured output rejects it.
-                sourceUrl: z
-                  .string()
-                  .describe("Exact URL of a verified website page"),
-              }),
-            )
-            .max(5),
-        }
-      : {}),
-    ...(needsTopics
-      ? {
-          suggestedTopics: z
-            .array(generatedAiTopicSchema)
-            .length(missingTopics ? 5 : savedTopics.length),
-        }
-      : {}),
-    ...(missingTopics
-      ? {
-          // Checked after generation, so a malformed extra keyword is dropped
-          // instead of failing a run that is already billed.
-          suggestedKeywords: z.array(z.string()),
-        }
-      : {}),
+  const outputSchema = researchOutputSchema({
+    hasBrandName: !!project.brandName,
+    missingOverview,
+    missingCompetitors,
+    needsTopics,
+    missingTopics,
+    savedTopicCount: savedTopics.length,
   });
   try {
     const site = missingOverview
