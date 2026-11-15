@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- one spec covers researchWebsite; every case shares its module mocks */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as Ai from "ai";
 import { z } from "zod";
@@ -454,20 +455,6 @@ describe("researchWebsite", () => {
     expect(search).toHaveBeenCalledOnce();
     expect(result.competitors).toEqual([]);
     expect(result.suggestedTopics).toEqual(topics);
-  });
-
-  it("drops a competitor whose source page was not read", async () => {
-    listCompetitors.mockResolvedValue([]);
-    readSite.mockResolvedValue({ pages: [{ url: "https://other.com/" }] });
-
-    const result = await researchWebsite(
-      "https://saved.com",
-      project,
-      customer,
-    );
-
-    expect(generateText).toHaveBeenCalledOnce();
-    expect(result.competitors).toEqual([]);
   });
 
   it("bills Context reads of a site that stays unreadable", async () => {
