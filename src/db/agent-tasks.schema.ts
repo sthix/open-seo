@@ -57,3 +57,26 @@ export const agentTasks = sqliteTable(
     index("agent_tasks_organization_idx").on(table.organizationId),
   ],
 );
+
+// Files a person attached to a task (screenshots, copy, PDFs) for the coding
+// agent to read. The bytes live in R2 under r2Key; see AgentTaskAttachments.
+export const agentTaskAttachments = sqliteTable(
+  "agent_task_attachments",
+  {
+    id: text("id").primaryKey(),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => agentTasks.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    r2Key: text("r2_key").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  },
+  (table) => [index("agent_task_attachments_task_idx").on(table.taskId)],
+);

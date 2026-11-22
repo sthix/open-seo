@@ -11,6 +11,8 @@ import {
   listAgentTasks,
   queueAgentTasks,
 } from "@/serverFunctions/agentTasks";
+import { downloadAttachment, formatBytes } from "./attachmentFiles";
+import { NewAgentTaskDialog } from "./NewAgentTaskDialog";
 
 type Task = Awaited<ReturnType<typeof listAgentTasks>>[number];
 
@@ -19,6 +21,8 @@ const TYPE_LABELS: Record<string, string> = {
   site_audit: "Site audit",
   ai_visibility: "AI visibility",
   indexing: "Indexing",
+  content: "Content",
+  manual: "Written by you",
 };
 
 const STATUS: Record<
@@ -52,6 +56,7 @@ export function AgentTasksPage({ projectId }: { projectId: string }) {
   const queryKey = ["agent-tasks", projectId];
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const tasks = useQuery({
     queryKey,
     queryFn: () => listAgentTasks({ data: { projectId } }),
@@ -112,12 +117,13 @@ export function AgentTasksPage({ projectId }: { projectId: string }) {
     <div className="space-y-4">
       <p className="max-w-3xl text-body-medium text-text-secondary">
         OpenSEO finds changes worth making from Search Console, the site audit,
-        Prompt Tracking and Google's index. Pick the ones you want and send them
-        to Claude Code: the runner on your Mac makes each change in the site's
-        repository and opens a pull request. Nothing goes live until you merge
-        it.
+        Prompt Tracking and Google's index, or write your own with "New task".
+        Pick the ones you want and send them to Claude Code: the runner on your
+        Mac makes each change in the site's repository and opens a pull request.
+        Nothing goes live until you merge it.
       </p>
       <div className="flex flex-wrap gap-2">
+        <Button onClick={() => setCreating(true)}>New task</Button>
         <Button
           variant="outline"
           disabled={find.isPending}
@@ -126,6 +132,7 @@ export function AgentTasksPage({ projectId }: { projectId: string }) {
           {find.isPending ? "Looking for tasks…" : "Find tasks now"}
         </Button>
         <Button
+          variant="outline"
           disabled={!selected.size || send.isPending}
           onClick={() => send.mutate()}
         >
@@ -139,11 +146,18 @@ export function AgentTasksPage({ projectId }: { projectId: string }) {
           Dismiss
         </Button>
       </div>
+      <NewAgentTaskDialog
+        projectId={projectId}
+        open={creating}
+        onOpenChange={setCreating}
+        onCreated={refresh}
+      />
       {tasks.isLoading ? (
         <p className="text-body-medium text-text-secondary">Loading…</p>
       ) : !visible.length ? (
         <p className="text-body-medium text-text-secondary">
-          No tasks yet. Click "Find tasks now", or wait for the nightly check.
+          No tasks yet. Write one with "New task", click "Find tasks now", or
+          wait for the nightly check.
         </p>
       ) : (
         <ul className="divide-y divide-border-primary rounded-xl border border-border-primary">
@@ -164,6 +178,7 @@ export function AgentTasksPage({ projectId }: { projectId: string }) {
           {visible.map((task) => (
             <TaskRow
               key={task.id}
+              projectId={projectId}
               task={task}
               checked={selected.has(task.id)}
               onCheck={(on) => toggle(task.id, on)}
@@ -178,12 +193,14 @@ export function AgentTasksPage({ projectId }: { projectId: string }) {
 }
 
 function TaskRow({
+  projectId,
   task,
   checked,
   onCheck,
   expanded,
   onExpand,
 }: {
+  projectId: string;
   task: Task;
   checked: boolean;
   onCheck: (on: boolean) => void;
@@ -232,6 +249,27 @@ function TaskRow({
         <p className="ml-7 whitespace-pre-wrap text-caption-1 text-text-secondary">
           {task.note}
         </p>
+      ) : null}
+      {task.attachments.length ? (
+        <ul className="ml-7 flex flex-wrap gap-2">
+          {task.attachments.map((file) => (
+            <li key={file.id}>
+              <button
+                type="button"
+                className="rounded-md border border-border-primary px-2 py-0.5 text-caption-1 text-text-secondary hover:text-text-primary"
+                title={`Download ${file.fileName}`}
+                onClick={() =>
+                  downloadAttachment(projectId, task.id, file.id).catch(
+                    (error: unknown) =>
+                      toast.error(getStandardErrorMessage(error)),
+                  )
+                }
+              >
+                {file.fileName} · {formatBytes(file.sizeBytes)}
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : null}
       {expanded ? (
         <pre className="ml-7 max-h-96 overflow-auto rounded-lg bg-background-tertiary-default p-3 text-caption-1 whitespace-pre-wrap text-text-primary">

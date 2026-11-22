@@ -107,6 +107,43 @@ async function saveProposed(
   return { added, updated };
 }
 
+// A task a person wrote themselves, not one a finder proposed. Sorted above
+// the found tasks, since someone asked for it.
+const MANUAL_TASK_SCORE = 100;
+
+async function createManual(input: {
+  projectId: string;
+  organizationId: string;
+  userId: string;
+  title: string;
+  brief: string;
+  targetUrl: string | null;
+  queue: boolean;
+}): Promise<AgentTask> {
+  const id = crypto.randomUUID();
+  const at = now();
+  const [row] = await db
+    .insert(agentTasks)
+    .values({
+      id,
+      projectId: input.projectId,
+      organizationId: input.organizationId,
+      type: "manual",
+      dedupeKey: `manual:${id}`,
+      title: input.title,
+      brief: input.brief,
+      targetUrl: input.targetUrl,
+      score: MANUAL_TASK_SCORE,
+      status: input.queue ? "queued" : "proposed",
+      queuedByUserId: input.queue ? input.userId : null,
+      queuedAt: input.queue ? at : null,
+      createdAt: at,
+      updatedAt: at,
+    })
+    .returning();
+  return row;
+}
+
 async function queue(
   projectId: string,
   taskIds: string[],
@@ -226,6 +263,12 @@ async function setPrState(
   return row ?? null;
 }
 
+async function remove(projectId: string, taskId: string) {
+  await db
+    .delete(agentTasks)
+    .where(and(eq(agentTasks.projectId, projectId), eq(agentTasks.id, taskId)));
+}
+
 async function get(projectId: string, taskId: string) {
   const [row] = await db
     .select()
@@ -239,10 +282,12 @@ export const AgentTaskRepository = {
   listForProject,
   listByStatus,
   saveProposed,
+  createManual,
   queue,
   dismiss,
   setPrState,
   claim,
   complete,
   get,
+  remove,
 };
