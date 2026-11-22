@@ -25,6 +25,7 @@ import {
 import type { AuditConfig } from "@/server/lib/audit/types";
 import { captureServerError, captureServerEvent } from "@/server/lib/posthog";
 import { runAuditPhases } from "@/server/workflows/siteAuditWorkflowPhases";
+import { runBacklinksStep } from "@/server/workflows/siteAuditBacklinksStep";
 import { resolveAuditStart } from "@/server/workflows/siteAuditStart";
 import { pgStep } from "@/server/workflows/pgStep";
 import {
@@ -109,6 +110,15 @@ export class SiteAuditWorkflow extends WorkflowEntrypoint<Env, AuditParams> {
           }),
       );
 
+      // Before the crawl, so the audit is complete only once the report's
+      // backlinks are stored. Skipped unless the audit was started with them.
+      await runBacklinksStep(step, {
+        auditId,
+        projectId,
+        startUrl,
+        billingCustomer,
+        config,
+      });
       await runAuditPhases(step, {
         auditId,
         workflowInstanceId: event.instanceId,

@@ -104,6 +104,7 @@ export function LaunchFormCard({
             />
             <div className="space-y-4">
               <LighthouseOptions launchForm={launchForm} />
+              <BacklinksOptions launchForm={launchForm} />
               <RenderingOptions
                 launchForm={launchForm}
                 maxPagesLimit={maxPagesLimit}
@@ -193,6 +194,43 @@ function LighthouseOptions({ launchForm }: Pick<Props, "launchForm">) {
             <FieldDescription>
               We choose a sample of 20 pages to audit, removing pages from
               duplicate templates.
+            </FieldDescription>
+          ) : null
+        }
+      </launchForm.Subscribe>
+    </Field>
+  );
+}
+
+function BacklinksOptions({ launchForm }: Pick<Props, "launchForm">) {
+  return (
+    <Field className="rounded-lg border border-border p-3">
+      <div className="flex items-center gap-2">
+        <launchForm.Field name="includeBacklinks">
+          {(field) => (
+            <Switch
+              id="audit-include-backlinks"
+              checked={field.state.value}
+              onCheckedChange={(checked) => field.handleChange(checked)}
+            />
+          )}
+        </launchForm.Field>
+        <FieldLabel
+          htmlFor="audit-include-backlinks"
+          title="Looks up the domain's backlinks once and adds them to the PDF report."
+        >
+          Include backlinks
+        </FieldLabel>
+      </div>
+
+      <launchForm.Subscribe
+        selector={(snapshot) => snapshot.values.includeBacklinks}
+      >
+        {(includeBacklinks) =>
+          includeBacklinks ? (
+            <FieldDescription>
+              We look up the domain&apos;s backlinks once during the audit,
+              billed like the Backlinks page, and add them to the PDF report.
             </FieldDescription>
           ) : null
         }

@@ -53,6 +53,7 @@ async function startAudit(input: {
   lighthouseStrategy?: LighthouseStrategy;
   limitTier: AuditLimitTier;
   renderJavaScript?: boolean;
+  includeBacklinks?: boolean;
 }) {
   const renderJavaScript = input.renderJavaScript ?? false;
   if (renderJavaScript && !(await isAuditRenderingAllowed())) {
@@ -88,6 +89,7 @@ async function startAudit(input: {
     maxPages,
     lighthouseStrategy,
     renderJavaScript,
+    includeBacklinks: input.includeBacklinks ?? false,
     crawlerCredentialId: credential?.id,
   };
 
