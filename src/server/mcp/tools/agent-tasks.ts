@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { AgentTaskRepository } from "@/server/features/agent-tasks/AgentTaskRepository";
-import { toAgentTaskView } from "@/server/features/agent-tasks/AgentTaskService";
+import {
+  attachmentInputSchema,
+  MAX_ATTACHMENTS,
+} from "@/shared/agent-task-attachments";
+import {
+  AgentTaskService,
+  toAgentTaskViews,
+} from "@/server/features/agent-tasks/AgentTaskService";
 import { buildProjectMeta } from "@/server/mcp/context";
 import { mcpResponse } from "@/server/mcp/formatters";
 import {
@@ -47,9 +54,10 @@ export const listAgentTasksTool = {
   },
   handler: withMcpProjectAuth(
     async (args: z.infer<z.ZodObject<typeof listInputSchema>>, context) => {
-      const tasks = (
-        await AgentTaskRepository.listByStatus(args.projectId, args.status)
-      ).map(toAgentTaskView);
+      const tasks = await toAgentTaskViews(
+        args.projectId,
+        await AgentTaskRepository.listByStatus(args.projectId, args.status),
+      );
       return mcpResponse({
         text: tasks.length
           ? tasks.map((task) => `- ${task.id}  ${task.title}`).join("\n")
@@ -60,6 +68,88 @@ export const listAgentTasksTool = {
           tasksPath(args.projectId),
         ),
         structuredContent: { tasks },
+      });
+    },
+  ),
+};
+
+const createInputSchema = {
+  projectId: projectIdSchema,
+  title: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .describe("Short imperative title, e.g. 'Add FAQ schema to /pricing'."),
+  brief: z
+    .string()
+    .trim()
+    .min(1)
+    .max(20_000)
+    .describe(
+      "Markdown brief for the coding agent: what to change in the site's repository, where, why, and how to tell it's done. Include the evidence (queries, URLs, numbers) you have; don't invent facts.",
+    ),
+  targetUrl: z
+    .string()
+    .url()
+    .max(500)
+    .optional()
+    .describe("The page the change is about, if there is one."),
+  queue: z
+    .boolean()
+    .default(false)
+    .describe(
+      "true sends it straight to Claude Code (status queued, the runner picks it up and opens a PR). Only set it when the user asked for the work to start now; otherwise the task waits on the Tasks page for a person to send it.",
+    ),
+  attachments: z
+    .array(attachmentInputSchema)
+    .max(MAX_ATTACHMENTS)
+    .default([])
+    .describe(
+      "Files for the coding agent to read: screenshots, copy, data or PDFs (images, PDFs and text only; 10 MB each, 25 MB in all), with the content base64-encoded. The runner puts them next to the repository and lists them in the prompt.",
+    ),
+} as const;
+
+export const createAgentTaskTool = {
+  name: "create_agent_task",
+  config: {
+    title: "Create an agent task",
+    description:
+      "Creates a coding task for this project on OpenSEO's Tasks page, written by the user rather than found by OpenSEO. The runner does queued tasks in the site's repository and opens a pull request; status, report and PR are logged on the task. Uses no credits.",
+    inputSchema: createInputSchema,
+    outputSchema: z
+      .object({
+        task: looseObjectOutputSchema,
+        ...optionalMetaOutputSchema,
+      })
+      .passthrough(),
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+    },
+  },
+  handler: withMcpProjectAuth(
+    async (args: z.infer<z.ZodObject<typeof createInputSchema>>, context) => {
+      const task = await AgentTaskService.create({
+        projectId: args.projectId,
+        organizationId: context.auth.organizationId,
+        userId: context.auth.userId,
+        title: args.title,
+        brief: args.brief,
+        targetUrl: args.targetUrl ?? null,
+        queue: args.queue,
+        attachments: args.attachments,
+      });
+      return mcpResponse({
+        text: `Created: ${task.title} (${task.status === "queued" ? "sent to Claude Code" : "waiting on the Tasks page"}${task.attachments.length ? `, ${task.attachments.length} attached` : ""}). Task id ${task.id}.`,
+        meta: buildProjectMeta(
+          context,
+          args.projectId,
+          tasksPath(args.projectId),
+        ),
+        structuredContent: { task },
       });
     },
   ),
@@ -99,6 +189,9 @@ export const claimAgentTaskTool = {
       );
       const task =
         claimed ?? (await AgentTaskRepository.get(args.projectId, args.taskId));
+      const [view] = task
+        ? await toAgentTaskViews(args.projectId, [task])
+        : [null];
       return mcpResponse({
         text: claimed
           ? `Claimed: ${claimed.title}`
@@ -110,7 +203,7 @@ export const claimAgentTaskTool = {
         ),
         structuredContent: {
           claimed: Boolean(claimed),
-          task: task ? toAgentTaskView(task) : null,
+          task: view,
         },
       });
     },
@@ -173,7 +266,61 @@ export const completeAgentTaskTool = {
           args.projectId,
           tasksPath(args.projectId),
         ),
-        structuredContent: { task: toAgentTaskView(task) },
+        structuredContent: {
+          task: (await toAgentTaskViews(args.projectId, [task]))[0],
+        },
+      });
+    },
+  ),
+};
+
+const attachmentInputArgs = {
+  ...taskInputSchema,
+  attachmentId: z.string().min(1),
+} as const;
+
+export const getAgentTaskAttachmentTool = {
+  name: "get_agent_task_attachment",
+  config: {
+    title: "Get an agent task attachment",
+    description:
+      "Downloads a file a person attached to a task (listed in the task's attachments), base64-encoded in structuredContent.contentBase64. For runners that put the files next to the repository; up to 10 MB per file. Uses no credits.",
+    inputSchema: attachmentInputArgs,
+    outputSchema: z
+      .object({
+        attachment: z
+          .object({
+            id: z.string(),
+            fileName: z.string(),
+            contentType: z.string(),
+            sizeBytes: z.number(),
+            contentBase64: z.string(),
+          })
+          .passthrough(),
+        ...optionalMetaOutputSchema,
+      })
+      .passthrough(),
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
+  },
+  handler: withMcpProjectAuth(
+    async (args: z.infer<z.ZodObject<typeof attachmentInputArgs>>, context) => {
+      const attachment = await AgentTaskService.readAttachment(
+        args.projectId,
+        args.taskId,
+        args.attachmentId,
+      );
+      return mcpResponse({
+        text: `${attachment.fileName} (${attachment.contentType}, ${attachment.sizeBytes} bytes): content in structuredContent.attachment.contentBase64.`,
+        meta: buildProjectMeta(
+          context,
+          args.projectId,
+          tasksPath(args.projectId),
+        ),
+        structuredContent: { attachment },
       });
     },
   ),
@@ -229,7 +376,9 @@ export const setAgentTaskPrStateTool = {
         ),
         structuredContent: {
           updated: Boolean(updated),
-          task: task ? toAgentTaskView(task) : null,
+          task: task
+            ? (await toAgentTaskViews(args.projectId, [task]))[0]
+            : null,
         },
       });
     },

@@ -151,6 +151,7 @@ export const {
   localRankKeywords,
   localRankScans,
   agentTasks,
+  agentTaskAttachments,
   localRankPoints,
   localRankBusinesses,
   localRankResults,

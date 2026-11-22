@@ -6,6 +6,7 @@ import type { SamChatAgent } from "@/server/features/sam/SamChatAgent";
 import { deleteR2Prefix } from "@/server/lib/r2";
 import { DashboardCacheService } from "@/server/features/dashboard/services/DashboardCacheService";
 import { deleteProjectAiObjects } from "@/server/features/ai-visibility/services/aiVisibilityStorage";
+import { deleteProjectAttachmentObjects } from "@/server/features/agent-tasks/AgentTaskAttachments";
 import {
   DUB_REFERRED_ORG_KV_PREFIX,
   DUB_REFERRED_USER_KV_PREFIX,
@@ -191,6 +192,7 @@ export async function eraseAccountStorage(
   let aiVisibilityObjects = 0;
   let searchConsoleCacheObjects = 0;
   let siteAuditObjects = 0;
+  let agentTaskAttachmentObjects = 0;
   for (const projectId of payload.projectIds) {
     aiVisibilityObjects += await deleteProjectAiObjects(env.R2, projectId);
     searchConsoleCacheObjects +=
@@ -200,6 +202,10 @@ export async function eraseAccountStorage(
     siteAuditObjects += await deleteR2Prefix(
       env.R2,
       `site-audit/${projectId}/`,
+    );
+    agentTaskAttachmentObjects += await deleteProjectAttachmentObjects(
+      env.R2,
+      projectId,
     );
   }
 
@@ -224,6 +230,7 @@ export async function eraseAccountStorage(
     aiVisibilityObjects,
     searchConsoleCacheObjects,
     siteAuditObjects,
+    agentTaskAttachmentObjects,
     googleRevocations,
   };
 }

@@ -48,3 +48,23 @@ export const agentTasks = pgTable(
     index("agent_tasks_organization_idx").on(table.organizationId),
   ],
 );
+
+// See src/db/agent-tasks.schema.ts.
+export const agentTaskAttachments = pgTable(
+  "agent_task_attachments",
+  {
+    id: text("id").primaryKey(),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => agentTasks.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    r2Key: text("r2_key").notNull(),
+    createdAt: text("created_at").notNull().default(isoNow),
+  },
+  (table) => [index("agent_task_attachments_task_idx").on(table.taskId)],
+);

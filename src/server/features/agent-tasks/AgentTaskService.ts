@@ -9,6 +9,11 @@ import {
   type AgentTaskType,
   type ProposedAgentTask,
 } from "./AgentTaskRepository";
+import type { AttachmentInput } from "@/shared/agent-task-attachments";
+import {
+  AgentTaskAttachments,
+  type AttachmentView,
+} from "./AgentTaskAttachments";
 import { findAiVisibilityTasks } from "./aiVisibilityTasks";
 import { findIndexingTasks } from "./indexingTasks";
 import { findSearchConsoleTasks } from "./searchConsoleTasks";
@@ -84,7 +89,10 @@ async function findTasksForAllProjects() {
 }
 
 /** What the runner and the UI see of a task. */
-export function toAgentTaskView(task: AgentTask) {
+export function toAgentTaskView(
+  task: AgentTask,
+  attachments: AttachmentView[] = [],
+) {
   return {
     id: task.id,
     type: task.type,
@@ -98,14 +106,61 @@ export function toAgentTaskView(task: AgentTask) {
     queuedAt: task.queuedAt,
     completedAt: task.completedAt,
     updatedAt: task.updatedAt,
+    attachments,
   };
+}
+
+/** Task views with the files attached to each. */
+export async function toAgentTaskViews(projectId: string, tasks: AgentTask[]) {
+  const attachments = await AgentTaskAttachments.listForTasks(
+    projectId,
+    tasks.map((task) => task.id),
+  );
+  return tasks.map((task) =>
+    toAgentTaskView(task, attachments.get(task.id) ?? []),
+  );
+}
+
+type CreateInput = Omit<
+  Parameters<typeof AgentTaskRepository.createManual>[0],
+  "queue"
+> & { queue: boolean; attachments: AttachmentInput[] };
+
+/**
+ * Creates a task a person wrote, with its files. It is queued only once the
+ * files are stored, so a runner never claims it without them.
+ */
+async function create({ queue, attachments, ...input }: CreateInput) {
+  const files = AgentTaskAttachments.prepare(attachments);
+  const task = await AgentTaskRepository.createManual({
+    ...input,
+    queue: false,
+  });
+  try {
+    await AgentTaskAttachments.save(task.projectId, task.id, files);
+  } catch (error) {
+    await AgentTaskRepository.remove(task.projectId, task.id);
+    await AgentTaskAttachments.deleteForTask(task.projectId, task.id);
+    throw error;
+  }
+  if (queue)
+    await AgentTaskRepository.queue(task.projectId, [task.id], input.userId);
+  const saved = await AgentTaskRepository.get(task.projectId, task.id);
+  if (!saved) throw new Error("The new task disappeared.");
+  const [view] = await toAgentTaskViews(task.projectId, [saved]);
+  return view;
 }
 
 export const AgentTaskService = {
   findTasks,
   findTasksForAllProjects,
   list: async (projectId: string) =>
-    (await AgentTaskRepository.listForProject(projectId)).map(toAgentTaskView),
+    toAgentTaskViews(
+      projectId,
+      await AgentTaskRepository.listForProject(projectId),
+    ),
+  create,
+  readAttachment: AgentTaskAttachments.read,
   queue: AgentTaskRepository.queue,
   dismiss: AgentTaskRepository.dismiss,
 };
