@@ -20,10 +20,8 @@ export async function exportAuditReport(args: {
   projectId: string;
   data: AuditResultsData;
   language: ReportLanguage;
-  /** Off skips the backlink lookups, which cost credits. */
-  includeBacklinks: boolean;
 }) {
-  const { projectId, data: summary, language, includeBacklinks } = args;
+  const { projectId, data: summary, language } = args;
   const ref = { projectId, auditId: summary.audit.id };
   // Opened inside the click, before any await, or the popup blocker stops it.
   const tab = window.open("", "_blank");
@@ -42,7 +40,7 @@ export async function exportAuditReport(args: {
         // Without it the report still prints, just without the comparison,
         // search traffic and AI crawler access.
         getAuditReportContext({
-          data: { ...ref, includeBacklinks },
+          data: ref,
         }).catch(() => null),
         fetchAllRows((page) =>
           getAuditIssues({
@@ -79,7 +77,6 @@ export async function exportAuditReport(args: {
     source_feature: "audit_report",
     format: "pdf",
     language,
-    include_backlinks: includeBacklinks,
     result_count: summary.issueCount,
   });
 }

@@ -50,6 +50,15 @@ export const SETTLE_RENDERING_STEP: WorkflowStepConfig = {
   timeout: "1 minute",
 };
 
+/**
+ * Backlink lookups for the report. They are paid, but the backlinks service
+ * caches each answer for hours, so the one retry is served from the cache.
+ */
+export const BACKLINKS_STEP: WorkflowStepConfig = {
+  retries: { limit: 1, delay: "10 seconds", backoff: "constant" },
+  timeout: "3 minutes",
+};
+
 /** R2 + DB persistence is idempotent and safe to retry after the paid step. */
 export const LIGHTHOUSE_PERSIST_STEP: WorkflowStepConfig = {
   retries: { limit: 3, delay: "5 seconds", backoff: "exponential" },

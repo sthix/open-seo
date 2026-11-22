@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const backlinksRowSchema = z.object({
+export const backlinksRowSchema = z.object({
   domainFrom: z.string().nullable(),
   urlFrom: z.string().nullable(),
   urlTo: z.string().nullable(),
@@ -19,7 +19,7 @@ const backlinksRowSchema = z.object({
   linksCount: z.number().nullable(),
 });
 
-const referringDomainRowSchema = z.object({
+export const referringDomainRowSchema = z.object({
   domain: z.string().nullable(),
   backlinks: z.number().nullable(),
   referringPages: z.number().nullable(),
@@ -30,7 +30,7 @@ const referringDomainRowSchema = z.object({
   brokenPages: z.number().nullable(),
 });
 
-const topPageRowSchema = z.object({
+export const topPageRowSchema = z.object({
   page: z.string().nullable(),
   backlinks: z.number().nullable(),
   referringDomains: z.number().nullable(),
@@ -38,7 +38,7 @@ const topPageRowSchema = z.object({
   brokenBacklinks: z.number().nullable(),
 });
 
-const backlinksTrendRowSchema = z.object({
+export const backlinksTrendRowSchema = z.object({
   date: z.string(),
   backlinks: z.number().nullable(),
   referringDomains: z.number().nullable(),

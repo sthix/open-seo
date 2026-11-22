@@ -4,7 +4,8 @@ import { AuditReportService } from "@/server/features/audit/services/AuditReport
 const mocks = vi.hoisted(() => ({
   getAuditForProject: vi.fn(),
   getEarlierCompletedAudits: vi.fn(),
-  loadReportBacklinks: vi.fn(),
+  readAuditBacklinks: vi.fn(),
+  storeAuditBacklinks: vi.fn(),
 }));
 
 vi.mock("cloudflare:workers", () => ({ env: {} }));
@@ -14,8 +15,9 @@ vi.mock("@/server/features/audit/repositories/AuditRepository", () => ({
     getEarlierCompletedAudits: mocks.getEarlierCompletedAudits,
   },
 }));
-vi.mock("@/server/features/audit/services/reportBacklinks", () => ({
-  loadReportBacklinks: mocks.loadReportBacklinks,
+vi.mock("@/server/features/audit/services/auditBacklinks", () => ({
+  readAuditBacklinks: mocks.readAuditBacklinks,
+  storeAuditBacklinks: mocks.storeAuditBacklinks,
 }));
 vi.mock("@/server/features/audit/services/startPageCheck", () => ({
   loadStartPageCheck: vi.fn().mockResolvedValue(null),
@@ -23,13 +25,6 @@ vi.mock("@/server/features/audit/services/startPageCheck", () => ({
 vi.mock("@/server/lib/audit/discovery", () => ({
   fetchSiteTextFile: vi.fn().mockResolvedValue(null),
 }));
-
-const customer = {
-  organizationId: "org",
-  userId: "u",
-  userEmail: "u@x.test",
-  projectId: "project",
-};
 
 describe("AuditReportService.getReportContext", () => {
   beforeEach(() => {
@@ -39,27 +34,25 @@ describe("AuditReportService.getReportContext", () => {
       startedAt: "2026-11-13T10:00:00Z",
     });
     mocks.getEarlierCompletedAudits.mockResolvedValue([]);
-    mocks.loadReportBacklinks.mockResolvedValue({ target: "example.com" });
+    mocks.readAuditBacklinks.mockResolvedValue({ target: "example.com" });
   });
 
-  it("loads backlinks only when the report includes them", async () => {
-    const without = await AuditReportService.getReportContext(
+  it("shows the backlinks the audit stored without calling the API", async () => {
+    const context = await AuditReportService.getReportContext(
       "audit",
-      customer,
-      { includeBacklinks: false },
+      "project",
     );
-    expect(without.backlinks).toBeNull();
-    expect(mocks.loadReportBacklinks).not.toHaveBeenCalled();
+    expect(context.backlinks).toEqual({ target: "example.com" });
+    expect(mocks.readAuditBacklinks).toHaveBeenCalledWith("project", "audit");
+    expect(mocks.storeAuditBacklinks).not.toHaveBeenCalled();
+  });
 
-    const withLinks = await AuditReportService.getReportContext(
+  it("prints without backlinks when the audit stored none", async () => {
+    mocks.readAuditBacklinks.mockRejectedValue(new Error("not found"));
+    const context = await AuditReportService.getReportContext(
       "audit",
-      customer,
-      { includeBacklinks: true },
+      "project",
     );
-    expect(withLinks.backlinks).toEqual({ target: "example.com" });
-    expect(mocks.loadReportBacklinks).toHaveBeenCalledWith(
-      "https://example.com/",
-      customer,
-    );
+    expect(context.backlinks).toBeNull();
   });
 });
