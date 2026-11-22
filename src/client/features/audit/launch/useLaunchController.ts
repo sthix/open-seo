@@ -100,6 +100,7 @@ export function useLaunchController({
           maxPages: effectiveMaxPages,
           lighthouseStrategy: value.runLighthouse ? "auto" : "none",
           renderJavaScript: value.renderJavaScript,
+          includeBacklinks: value.includeBacklinks,
         });
         toast.success("Audit started!");
         onAuditStarted(result.auditId);
@@ -160,6 +161,7 @@ function useLaunchMutations({ projectId }: { projectId: string }) {
       maxPages: number;
       lighthouseStrategy: "auto" | "none";
       renderJavaScript: boolean;
+      includeBacklinks: boolean;
     }) => startAudit({ data }),
     onSuccess: () => {
       void invalidateHistory();

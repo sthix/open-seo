@@ -71,6 +71,8 @@ import { listProjectsTool } from "@/server/mcp/tools/list-projects";
 import {
   claimAgentTaskTool,
   completeAgentTaskTool,
+  createAgentTaskTool,
+  getAgentTaskAttachmentTool,
   setAgentTaskPrStateTool,
   listAgentTasksTool,
 } from "@/server/mcp/tools/agent-tasks";
@@ -272,6 +274,8 @@ export function registerOpenSeoTools(
   register(getProjectContextTool);
   register(updateProjectContextTool);
   register(listAgentTasksTool);
+  register(createAgentTaskTool);
+  register(getAgentTaskAttachmentTool);
   register(claimAgentTaskTool);
   register(completeAgentTaskTool);
   register(setAgentTaskPrStateTool);

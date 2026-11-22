@@ -13,6 +13,8 @@ export interface AuditConfig {
   maxPages: number;
   lighthouseStrategy: LighthouseStrategy;
   renderJavaScript?: boolean;
+  /** Look up the domain's backlinks (paid) and keep them for the report. */
+  includeBacklinks?: boolean;
   /** Detected from the start URL's `powered-by` response header. */
   sitePlatform?: "shopify";
   /** Which crawler-access credential the crawl replayed, if any. */
@@ -36,6 +38,7 @@ const auditConfigSchema = z.object({
   maxPages: z.number().int().min(MIN_AUDIT_PAGES).max(PAID_MAX_AUDIT_PAGES),
   lighthouseStrategy: lighthouseStrategySchema,
   renderJavaScript: z.boolean().optional().default(false),
+  includeBacklinks: z.boolean().optional().default(false),
   // Absent on every audit stored before crawler access shipped, and a future
   // platform value must not make an old report unviewable.
   sitePlatform: z.literal("shopify").optional().catch(undefined),

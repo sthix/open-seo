@@ -20,16 +20,13 @@ export const startAuditSchema = z.object({
     .optional()
     .default(DEFAULT_AUDIT_PAGES),
   lighthouseStrategy: z.enum(["auto", "none"]).optional().default("auto"),
+  /** Paid backlink lookups, made once during the audit for its report. */
+  includeBacklinks: z.boolean().optional().default(false),
 });
 
 export const getAuditStatusSchema = z.object({
   projectId: z.string().min(1),
   auditId: z.string().min(1),
-});
-
-export const getAuditReportContextSchema = getAuditStatusSchema.extend({
-  /** Backlink lookups cost credits, so the report can leave them out. */
-  includeBacklinks: z.boolean().default(true),
 });
 
 export const getAuditSummarySchema = z.object({

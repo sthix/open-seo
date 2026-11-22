@@ -13,7 +13,6 @@ import {
   getAuditHistorySchema,
   getAuditIssuesSchema,
   getAuditPagesSchema,
-  getAuditReportContextSchema,
   getAuditSummarySchema,
   getAuditStatusSchema,
   getCrawlProgressSchema,
@@ -40,6 +39,7 @@ export const startAudit = createServerFn({ method: "POST" })
       lighthouseStrategy: data.lighthouseStrategy,
       limitTier,
       renderJavaScript,
+      includeBacklinks: data.includeBacklinks,
     });
 
     waitUntil(
@@ -51,6 +51,7 @@ export const startAudit = createServerFn({ method: "POST" })
           project_id: context.projectId,
           max_pages: data.maxPages ?? 50,
           run_lighthouse: data.lighthouseStrategy !== "none",
+          include_backlinks: data.includeBacklinks,
           plan_tier: limitTier,
         },
       }),
@@ -95,11 +96,9 @@ export const getAuditIssues = createServerFn({ method: "POST" })
  */
 export const getAuditReportContext = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
-  .validator(getAuditReportContextSchema)
+  .validator(getAuditStatusSchema)
   .handler(async ({ data, context }) => {
-    return AuditReportService.getReportContext(data.auditId, context, {
-      includeBacklinks: data.includeBacklinks,
-    });
+    return AuditReportService.getReportContext(data.auditId, context.projectId);
   });
 
 export const getAuditHistory = createServerFn({ method: "POST" })
