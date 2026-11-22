@@ -89,10 +89,7 @@ async function findTasksForAllProjects() {
 }
 
 /** What the runner and the UI see of a task. */
-export function toAgentTaskView(
-  task: AgentTask,
-  attachments: AttachmentView[] = [],
-) {
+function toAgentTaskView(task: AgentTask, attachments: AttachmentView[] = []) {
   return {
     id: task.id,
     type: task.type,
